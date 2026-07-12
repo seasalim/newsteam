@@ -1,0 +1,42 @@
+[
+  {
+    "id": "reddit-tech",
+    "name": "Reddit: Tech",
+    "type": "rss",
+    "url": "https://www.reddit.com/r/technology+cybersecurity/.rss",
+    "check_interval_minutes": 60,
+    "max_items": 3,
+    "content_quality": "thin-snippet",
+    "fetch_hint": "never"
+  },
+  {
+    "id": "reddit-finance",
+    "name": "Reddit: Finance",
+    "type": "rss",
+    "url": "https://www.reddit.com/r/investing+stocks+bonds/.rss",
+    "check_interval_minutes": 120,
+    "max_items": 3,
+    "content_quality": "thin-snippet",
+    "fetch_hint": "never"
+  },
+  {
+    "id": "reddit-travel",
+    "name": "Reddit: Travel",
+    "type": "rss",
+    "url": "https://www.reddit.com/r/travel+awardtravel/.rss",
+    "check_interval_minutes": 120,
+    "max_items": 2,
+    "content_quality": "thin-snippet",
+    "fetch_hint": "never"
+  },
+  {
+    "id": "reddit-entertainment",
+    "name": "Reddit: Entertainment",
+    "type": "rss",
+    "url": "https://www.reddit.com/r/gaming+movies/.rss",
+    "check_interval_minutes": 120,
+    "max_items": 2,
+    "content_quality": "thin-snippet",
+    "fetch_hint": "never"
+  }
+]

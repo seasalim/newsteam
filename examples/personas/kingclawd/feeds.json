@@ -1,0 +1,42 @@
+[
+  {
+    "id": "reddit-ai",
+    "name": "Reddit: AI",
+    "type": "rss",
+    "url": "https://www.reddit.com/r/singularity+accelerate/.rss",
+    "check_interval_minutes": 60,
+    "max_items": 5,
+    "content_quality": "thin-snippet",
+    "fetch_hint": "never"
+  },
+  {
+    "id": "arxiv-cs-ai",
+    "name": "arXiv cs.AI",
+    "type": "rss",
+    "url": "https://export.arxiv.org/rss/cs.AI",
+    "fetch_hint": "auto",
+    "content_quality": "partial",
+    "check_interval_minutes": 120,
+    "max_items": 8
+  },
+  {
+    "id": "the-innermost-loop",
+    "name": "The Innermost Loop",
+    "type": "rss",
+    "url": "https://theinnermostloop.substack.com/feed",
+    "fetch_hint": "never",
+    "content_quality": "full-text",
+    "check_interval_minutes": 60,
+    "max_items": 5
+  },
+  {
+    "id": "lesswrong",
+    "name": "LessWrong",
+    "type": "rss",
+    "url": "https://www.lesswrong.com/feed.xml",
+    "fetch_hint": "auto",
+    "content_quality": "partial",
+    "check_interval_minutes": 60,
+    "max_items": 5
+  }
+]

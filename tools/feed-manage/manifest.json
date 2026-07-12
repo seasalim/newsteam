@@ -1,0 +1,23 @@
+{
+  "name": "feed_manage",
+  "description": "Inspect feed subscriptions. Actions: list (show configured feeds), status (show scheduler state), and check (peek at new items without affecting the scheduler). This tool is read-only.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "description": "Operation to perform",
+        "enum": ["list", "check", "status"]
+      },
+      "feed_id": {
+        "type": "string",
+        "description": "Optional feed ID for 'check'; omit to check all feeds."
+      }
+    },
+    "required": ["action"]
+  },
+  "secrets": [],
+  "timeout_ms": 15000,
+  "handler": "handler.py",
+  "runtime": "python"
+}

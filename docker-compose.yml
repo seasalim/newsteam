@@ -1,0 +1,16 @@
+name: newsteam
+
+services:
+  newsteam:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DASHBOARD_HOST: 0.0.0.0
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./persona:/app/persona
+      - ./logs:/app/logs
+    ports:
+      - "127.0.0.1:7777:7777"
+    restart: unless-stopped

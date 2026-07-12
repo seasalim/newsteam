@@ -1,0 +1,22 @@
+{
+  "name": "web_fetch",
+  "description": "Fetch a URL and extract readable text content. Use after web_search to read full articles, docs, or pages.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "The URL to fetch (http or https)"
+      },
+      "max_chars": {
+        "type": "number",
+        "description": "Maximum characters to return (default 4000, max 8000)"
+      }
+    },
+    "required": ["url"]
+  },
+  "secrets": [],
+  "timeout_ms": 10000,
+  "handler": "handler.py",
+  "runtime": "python"
+}

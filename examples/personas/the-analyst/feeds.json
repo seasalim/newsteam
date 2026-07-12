@@ -1,0 +1,72 @@
+[
+  {
+    "id": "wall-street-journal-markets",
+    "name": "The Wall Street Journal — Markets",
+    "type": "rss",
+    "url": "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",
+    "fetch_hint": "auto",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 60,
+    "max_items": 8
+  },
+  {
+    "id": "marketwatch-top-stories",
+    "name": "MarketWatch — Top Stories",
+    "type": "rss",
+    "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    "fetch_hint": "auto",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 60,
+    "max_items": 8
+  },
+  {
+    "id": "cnbc-finance",
+    "name": "CNBC — Finance",
+    "type": "rss",
+    "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
+    "fetch_hint": "auto",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 60,
+    "max_items": 8
+  },
+  {
+    "id": "nyt-economy",
+    "name": "The New York Times — Economy",
+    "type": "rss",
+    "url": "https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml",
+    "fetch_hint": "auto",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 120,
+    "max_items": 6
+  },
+  {
+    "id": "bbc-business",
+    "name": "BBC News — Business",
+    "type": "rss",
+    "url": "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "fetch_hint": "auto",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 60,
+    "max_items": 8
+  },
+  {
+    "id": "economist-finance-economics",
+    "name": "The Economist — Finance & economics",
+    "type": "rss",
+    "url": "https://www.economist.com/finance-and-economics/rss.xml",
+    "fetch_hint": "auto",
+    "content_quality": "partial",
+    "check_interval_minutes": 240,
+    "max_items": 6
+  },
+  {
+    "id": "marginal-revolution",
+    "name": "Marginal Revolution",
+    "type": "rss",
+    "url": "https://marginalrevolution.com/feed",
+    "fetch_hint": "never",
+    "content_quality": "full-text",
+    "check_interval_minutes": 180,
+    "max_items": 6
+  }
+]

@@ -1,0 +1,75 @@
+[
+  {
+    "id": "politico",
+    "name": "Politico",
+    "type": "rss",
+    "url": "https://rss.politico.com/politics-news.xml",
+    "check_interval_minutes": 60,
+    "max_items": 5
+  },
+  {
+    "id": "the-hill",
+    "name": "The Hill",
+    "type": "rss",
+    "url": "https://thehill.com/feed/",
+    "check_interval_minutes": 180,
+    "max_items": 3
+  },
+  {
+    "id": "npr-politics",
+    "name": "NPR Politics",
+    "type": "rss",
+    "url": "https://feeds.npr.org/1014/rss.xml",
+    "check_interval_minutes": 120,
+    "max_items": 5
+  },
+  {
+    "id": "nyt-politics",
+    "name": "NYT Politics",
+    "type": "rss",
+    "url": "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
+    "check_interval_minutes": 120,
+    "max_items": 5
+  },
+  {
+    "id": "wapo-politics",
+    "name": "Washington Post Politics",
+    "type": "rss",
+    "url": "https://feeds.washingtonpost.com/rss/politics",
+    "check_interval_minutes": 120,
+    "max_items": 5
+  },
+  {
+    "id": "the-intercept-politics",
+    "name": "The Intercept Politics",
+    "type": "rss",
+    "url": "https://theintercept.com/politics/feed/",
+    "check_interval_minutes": 480,
+    "max_items": 3
+  },
+  {
+    "id": "the-dispatch",
+    "name": "The Dispatch",
+    "type": "rss",
+    "url": "https://thedispatch.com/feed/",
+    "check_interval_minutes": 480,
+    "max_items": 3,
+    "fetch_hint": "always"
+  },
+  {
+    "id": "foreign-affairs",
+    "name": "Foreign Affairs",
+    "type": "rss",
+    "url": "https://www.foreignaffairs.com/rss.xml",
+    "check_interval_minutes": 480,
+    "max_items": 3
+  },
+  {
+    "id": "bbc-world",
+    "name": "BBC World",
+    "type": "rss",
+    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "check_interval_minutes": 180,
+    "max_items": 3
+  }
+]

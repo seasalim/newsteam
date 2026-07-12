@@ -1,0 +1,42 @@
+[
+  {
+    "id": "hnrss-frontpage",
+    "name": "Hacker News Frontpage",
+    "type": "rss",
+    "url": "https://news.ycombinator.com/rss",
+    "fetch_hint": "always",
+    "content_quality": "thin-snippet",
+    "check_interval_minutes": 30,
+    "max_items": 5
+  },
+  {
+    "id": "ars-technica",
+    "name": "Ars Technica",
+    "type": "rss",
+    "url": "https://feeds.arstechnica.com/arstechnica/index",
+    "fetch_hint": "auto",
+    "content_quality": "partial",
+    "check_interval_minutes": 60,
+    "max_items": 5
+  },
+  {
+    "id": "mit-technology-review",
+    "name": "MIT Technology Review",
+    "type": "rss",
+    "url": "https://www.technologyreview.com/feed/",
+    "fetch_hint": "auto",
+    "content_quality": "partial",
+    "check_interval_minutes": 120,
+    "max_items": 5
+  },
+  {
+    "id": "federal-reserve-releases",
+    "name": "Federal Reserve Press Releases",
+    "type": "rss",
+    "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+    "fetch_hint": "always",
+    "content_quality": "partial",
+    "check_interval_minutes": 120,
+    "max_items": 5
+  }
+]

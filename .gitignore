@@ -1,0 +1,17 @@
+node_modules/
+dist/
+logs/*
+!logs/.gitkeep
+.env
+config.yaml
+*.log
+.DS_Store
+*~
+
+# Persona files — private, never commit
+persona/*/
+persona/IDENTITY.md
+persona/MEMORY.md
+persona/feeds.json
+persona/feeds_state.json
+persona/feeds_pending.json

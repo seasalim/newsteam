@@ -1,0 +1,80 @@
+[
+  {
+    "id": "times-of-israel",
+    "name": "Times of Israel",
+    "type": "rss",
+    "url": "https://www.timesofisrael.com/feed/",
+    "check_interval_minutes": 60,
+    "max_items": 5,
+    "content_quality": "thin-snippet"
+  },
+  {
+    "id": "iran-international",
+    "name": "Iran International",
+    "type": "rss",
+    "url": "https://www.iranintl.com/en/feed",
+    "check_interval_minutes": 60,
+    "max_items": 5
+  },
+  {
+    "id": "al-monitor",
+    "name": "Al-Monitor",
+    "type": "rss",
+    "url": "https://www.al-monitor.com/rss",
+    "check_interval_minutes": 60,
+    "max_items": 3,
+    "content_quality": "thin-snippet"
+  },
+  {
+    "id": "al-jazeera",
+    "name": "Al Jazeera",
+    "type": "rss",
+    "url": "https://www.aljazeera.com/xml/rss/all.xml",
+    "check_interval_minutes": 60,
+    "max_items": 3,
+    "content_quality": "thin-snippet"
+  },
+  {
+    "id": "bbc-middle-east",
+    "name": "BBC Middle East",
+    "type": "rss",
+    "url": "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
+    "check_interval_minutes": 120,
+    "max_items": 5,
+    "content_quality": "thin-snippet"
+  },
+  {
+    "id": "war-on-the-rocks",
+    "name": "War on the Rocks",
+    "type": "rss",
+    "url": "https://warontherocks.com/feed/",
+    "check_interval_minutes": 480,
+    "max_items": 3
+  },
+  {
+    "id": "long-war-journal",
+    "name": "Long War Journal",
+    "type": "rss",
+    "url": "https://www.longwarjournal.org/feed",
+    "check_interval_minutes": 480,
+    "max_items": 3,
+    "fetch_hint": "always"
+  },
+  {
+    "id": "khaleej-times-uae",
+    "name": "Khaleej Times UAE",
+    "type": "rss",
+    "url": "https://www.khaleejtimes.com/api/v1/collections/uae.rss",
+    "check_interval_minutes": 60,
+    "max_items": 5,
+    "content_quality": "thin-snippet"
+  },
+  {
+    "id": "un-middle-east",
+    "name": "UN Middle East",
+    "type": "rss",
+    "url": "https://news.un.org/feed/subscribe/en/news/region/middle-east/feed/rss.xml",
+    "check_interval_minutes": 180,
+    "max_items": 3
+  }
+]

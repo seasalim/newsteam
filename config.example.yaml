@@ -1,0 +1,60 @@
+defaults:
+  budget:
+    # Models use provider-prefixed IDs. Chat and digest models for one agent
+    # must use the same provider prefix (`google/`, `anthropic/`, or `openai/`).
+    # OpenAI examples: openai/gpt-5.6-luna, openai/gpt-5.6-terra, openai/gpt-5.6-sol.
+    model: google/gemini-3-flash-preview
+    digest_model: google/gemini-3-flash-preview
+    digest_thinking_level: low
+    max_input_tokens: 20000
+    max_output_tokens: 6000
+    # Output cap for internal context-compaction calls; must not exceed max_output_tokens.
+    context_summary_max_tokens: 500
+    max_turns: 12
+    # Hard ceiling for one agent session, in cents.
+    max_session_cost_cents: 250
+    context_strategy: truncate
+  conversation:
+    window_size: 10
+    rate_limit_ms: 1000
+  memory:
+    max_tokens: 3000
+
+discord:
+  # Enable Discord Developer Mode, then copy your user ID.
+  allowed_user_id: "YOUR_DISCORD_USER_ID"
+
+tools_dir: tools
+
+agents:
+  - id: kingclawd
+    persona_dir: persona/kingclawd
+    # Channels assigned to one agent cannot overlap another agent.
+    channel_ids: ["YOUR_CHANNEL_ID"]
+    feeds:
+      enabled: true
+      check_interval_minutes: 15
+      waking_hours_start: 7
+      waking_hours_end: 22
+      channel_id: "YOUR_FEED_CHANNEL_ID"
+      max_items_per_digest: 20
+      max_queue_age_hours: 12
+      digest_max_turns: 12
+      # Digest delivery and weekly synthesis are optional. Uncomment or edit
+      # these schedules to suit your server.
+      digest_times:
+        - "08:00"
+        - "13:00"
+        - "18:00"
+      synthesis_day: 0
+      synthesis_time: "10:00"
+
+  - id: the-analyst
+    persona_dir: persona/the-analyst
+    channel_ids: ["YOUR_ANALYST_CHANNEL_ID"]
+    # Copy the feeds block above if this agent should receive scheduled
+    # digests. Its feeds.channel_id should be YOUR_ANALYST_FEED_CHANNEL_ID.
+    # IMPORTANT: stagger digest_times across agents (e.g. 08:30/13:30/18:30
+    # here vs kingclawd's 08:00/13:00/18:00). Agents that share a digest time
+    # deliver concurrently, which can exceed per-minute rate limits on free
+    # API plans.

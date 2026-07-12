@@ -1,0 +1,12 @@
+[
+  {
+    "id": "bogleheads-personal-investments",
+    "name": "Bogleheads Personal Investments",
+    "type": "rss",
+    "url": "https://www.bogleheads.org/forum/feed.php?mode=topics&f=1",
+    "check_interval_minutes": 60,
+    "max_items": 5,
+    "content_quality": "partial",
+    "fetch_hint": "never"
+  }
+]

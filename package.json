@@ -1,0 +1,31 @@
+{
+  "name": "newsteam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Your personal news team, for free or a dime a day. Self-hosted AI news analysts with personality for Discord.",
+  "license": "MIT",
+  "repository": "github:seasalim/newsteam",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy": "tsc && launchctl kickstart -k gui/$(id -u)/com.newsteam",
+    "test": "node --experimental-strip-types --experimental-transform-types --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.66.0",
+    "@google/genai": "^1.48.0",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.0.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^6.46.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
+}
