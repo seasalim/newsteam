@@ -42,7 +42,23 @@ type Usage = {
   thinkingTokens?: number;
 };
 
+function withAgentContext(log: FeedLogger, agentId?: string): FeedLogger {
+  if (!agentId) return log;
+
+  const prefix = (args: unknown[]): unknown[] => {
+    const [message, ...rest] = args;
+    if (typeof message !== "string" || !message.startsWith("[feeds]")) return args;
+    return [`[feeds] ${agentId}:${message.slice("[feeds]".length)}`, ...rest];
+  };
+
+  return {
+    log: (...args: unknown[]) => log.log(...prefix(args)),
+    error: (...args: unknown[]) => log.error(...prefix(args)),
+  };
+}
+
 export type FeedMonitorCycleOptions = {
+  agentId?: string;
   feedsConfig: FeedsConfig;
   jobQueue: JobQueue;
   agent: FeedAgent;
@@ -69,7 +85,7 @@ export type FeedMonitorCycleOptions = {
 // ── Feed monitoring ─────────────────────────────────────────────
 
 export async function runFeedMonitorCycle(options: FeedMonitorCycleOptions): Promise<void> {
-  const log = options.log ?? console;
+  const log = withAgentContext(options.log ?? console, options.agentId);
   const currentPacificHourProvider = options.getCurrentPacificHour ?? (() => getCurrentPacificHour());
 
   try {
@@ -155,6 +171,7 @@ export async function runFeedMonitorCycle(options: FeedMonitorCycleOptions): Pro
 // ── Digest delivery ─────────────────────────────────────────────
 
 export async function runDigestDelivery(options: {
+  agentId?: string;
   feedsConfig: FeedsConfig;
   jobQueue: JobQueue;
   agent: FeedAgent;
@@ -174,7 +191,7 @@ export async function runDigestDelivery(options: {
   onDigestMetrics?: (metrics: DigestMetrics) => void;
   onDigestQuality?: (evaluation: DigestQualityEvaluation) => void;
 }): Promise<void> {
-  const log = options.log ?? console;
+  const log = withAgentContext(options.log ?? console, options.agentId);
   const activeFeedIds = loadActiveFeedIds(options.feedsPath);
   const rawItems = loadPendingItems(
     options.pendingPath,
@@ -241,6 +258,7 @@ export async function runDigestDelivery(options: {
  * Used by the /refresh slash command.
  */
 export async function runFeedRefresh(options: {
+  agentId?: string;
   feedsConfig: FeedsConfig;
   jobQueue: JobQueue;
   agent: FeedAgent;
@@ -261,7 +279,7 @@ export async function runFeedRefresh(options: {
   onDigestMetrics?: (metrics: DigestMetrics) => void;
   onDigestQuality?: (evaluation: DigestQualityEvaluation) => void;
 }): Promise<{ feedsChecked: number; newItems: number; delivered: boolean }> {
-  const log = options.log ?? console;
+  const log = withAgentContext(options.log ?? console, options.agentId);
 
   // Force check_all: pull every feed regardless of next_due_at
   const result = await runFeedCheckScript({

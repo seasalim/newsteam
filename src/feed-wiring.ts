@@ -4,6 +4,7 @@
  * across heartbeat.ts and index.ts.
  */
 
+import fs from "node:fs";
 import path from "node:path";
 
 import type { DigestQualityEvaluation } from "./agent.js";
@@ -38,6 +39,46 @@ export function resolveFeedPaths(personaDir: string): FeedPaths {
     qualityPath: path.resolve(personaDir, "digest_quality.jsonl"),
     sourceReviewPath: path.resolve(personaDir, "feed_source_review.json"),
   };
+}
+
+export function getFeedStartupWarning(options: {
+  agentId: string;
+  feedsEnabled: boolean;
+  personaDir: string;
+}): string | null {
+  if (!options.feedsEnabled) return null;
+
+  const personaDir = path.resolve(options.personaDir);
+  if (!fs.existsSync(personaDir)) {
+    return `${options.agentId}: feeds enabled but persona directory is missing: ${personaDir}`;
+  }
+
+  const feedsPath = path.join(personaDir, "feeds.json");
+  if (!fs.existsSync(feedsPath)) {
+    return `${options.agentId}: feeds enabled but feeds.json is missing: ${feedsPath}`;
+  }
+
+  let feedCount = 0;
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(feedsPath, "utf-8"));
+    if (Array.isArray(parsed)) {
+      feedCount = parsed.filter((entry) => (
+        typeof entry === "object" &&
+        entry !== null &&
+        "id" in entry &&
+        typeof entry.id === "string" &&
+        entry.id.length > 0
+      )).length;
+    }
+  } catch {
+    // Invalid or unreadable registries contain no usable feeds.
+  }
+
+  if (feedCount === 0) {
+    return `${options.agentId}: feeds enabled but no valid feeds are configured in ${feedsPath}`;
+  }
+
+  return null;
 }
 
 // ── Callback factories ──────────────────────────────────────────────

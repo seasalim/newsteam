@@ -51,6 +51,7 @@ export function startHeartbeat(options: HeartbeatOptions): { interval: ReturnTyp
     // It handles waking hours, accumulates pending items for digest_times
     // batching, and only narrates immediately in legacy (non-batched) mode.
     void runFeedMonitorCycle({
+      agentId: agent.id,
       feedsConfig,
       jobQueue: options.jobQueues.get(agent.id)!,
       agent: agent.agentLoop,
@@ -92,6 +93,7 @@ export function startHeartbeat(options: HeartbeatOptions): { interval: ReturnTyp
       const callbacks = buildDigestCallbacks({ agent, logger: options.logger, ledger: options.ledger, lastDigests: options.lastDigests });
 
       void runDigestDelivery({
+        agentId: agent.id,
         feedsConfig,
         jobQueue: options.jobQueues.get(agent.id)!,
         agent: agent.agentLoop,

@@ -15,7 +15,7 @@ import type { ConfirmFn } from "./agent.js";
 import { createBot } from "./bot.js";
 import { loadConfig } from "./config.js";
 import { ToolExecutor } from "./executor.js";
-import { buildDigestCallbacks, resolveFeedPaths } from "./feed-wiring.js";
+import { buildDigestCallbacks, getFeedStartupWarning, resolveFeedPaths } from "./feed-wiring.js";
 import { loadPendingItems, runDigestDelivery, runFeedRefresh } from "./feeds.js";
 import { startHeartbeat } from "./heartbeat.js";
 import { startDashboard } from "./dashboard.js";
@@ -205,6 +205,7 @@ async function main(): Promise<void> {
         }
         const callbacks = buildDigestCallbacks({ agent: instance, logger, ledger, lastDigests });
         await runDigestDelivery({
+          agentId: instance.id,
           feedsConfig: instance.config.feeds,
           jobQueue: jobQueues.get(instance.id)!,
           agent: instance.agentLoop,
@@ -229,6 +230,7 @@ async function main(): Promise<void> {
         const callbacks = buildDigestCallbacks({ agent: instance, logger, ledger, lastDigests });
 
         const { feedsChecked, newItems, delivered } = await runFeedRefresh({
+          agentId: instance.id,
           feedsConfig: instance.config.feeds,
           jobQueue: jobQueues.get(instance.id)!,
           agent: instance.agentLoop,
@@ -309,6 +311,12 @@ async function main(): Promise<void> {
     const feedStatus = agent.config.feeds?.enabled ? "enabled" : "disabled";
     const channels = channelCount === 1 ? "channel" : "channels";
     console.log(`[core]     ${agent.id}: feeds ${feedStatus}, ${channelCount} ${channels}`);
+    const feedWarning = getFeedStartupWarning({
+      agentId: agent.id,
+      feedsEnabled: agent.config.feeds?.enabled ?? false,
+      personaDir: agent.raw.persona_dir,
+    });
+    if (feedWarning) console.warn(`[core] WARNING: ${feedWarning}`);
   }
   console.log(`[core]   Tools: ${toolNames.join(", ") || "none"}`);
 }

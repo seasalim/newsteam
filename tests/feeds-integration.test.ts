@@ -929,6 +929,7 @@ test("runFeedMonitorCycle accumulates items when digest_times is configured", as
   ];
 
   await runFeedMonitorCycle({
+    agentId: "test-agent",
     feedsConfig: createFeedsConfig({ digest_times: ["09:00", "18:00"] }),
     jobQueue: queue,
     agent,
@@ -948,7 +949,7 @@ test("runFeedMonitorCycle accumulates items when digest_times is configured", as
   assert.equal(pending.length, 2);
 
   // Log should mention accumulation
-  assert.ok(logger.logs.some((l) => l.includes("Accumulated 2 items")));
+  assert.ok(logger.logs.includes("[feeds] test-agent: Accumulated 2 items (2 total pending)"));
 });
 
 test("runFeedMonitorCycle in batched mode accumulates ALL items beyond max_items_per_digest", async () => {
@@ -1058,6 +1059,7 @@ test("runDigestDelivery narrates pending items and clears the file", async () =>
   savePendingItems(items, pendingPath);
 
   await runDigestDelivery({
+    agentId: "test-agent",
     feedsConfig: createFeedsConfig(),
     jobQueue: queue,
     agent,
@@ -1069,6 +1071,7 @@ test("runDigestDelivery narrates pending items and clears the file", async () =>
   // Should have narrated
   assert.equal(agent.prompts.length, 1);
   assert.equal(bot.sent.length, 1);
+  assert.ok(logger.logs.some((line) => line.startsWith("[feeds] test-agent: Digest time — narrating")));
 
   // Pending file should be cleared
   const remaining = loadPendingItems(pendingPath);
@@ -1162,6 +1165,7 @@ test("runDigestDelivery emits fetch metrics mapped back to feed ids", async () =
     };
 
   await runDigestDelivery({
+    agentId: "test-agent",
     feedsConfig: createFeedsConfig(),
     jobQueue: queue,
     agent,
@@ -1178,7 +1182,10 @@ test("runDigestDelivery emits fetch metrics mapped back to feed ids", async () =
   assert.equal(metrics?.items_fetched, 2);
   assert.deepEqual(metrics?.fetched_feed_ids, ["thin-feed", "full-feed"]);
   assert.deepEqual(metrics?.fetch_hint_counts, { auto: 0, always: 1, never: 1 });
-  assert.ok(logger.logs.some((line) => line.includes("2 fetched")), "should log fetched item count");
+  assert.ok(
+    logger.logs.some((line) => line.startsWith("[feeds] test-agent: Digest metrics:") && line.includes("2 fetched")),
+    "should log fetched item count with agent context",
+  );
 });
 
 test("runDigestDelivery flags large digests with zero fetches in metrics", async () => {
@@ -1259,6 +1266,7 @@ test("runDigestDelivery persists digest quality evaluation without blocking deli
 
   let evaluationSummary = "";
   await runDigestDelivery({
+    agentId: "test-agent",
     feedsConfig: createFeedsConfig(),
     jobQueue: queue,
     agent,
@@ -1273,6 +1281,7 @@ test("runDigestDelivery persists digest quality evaluation without blocking deli
 
   assert.equal(bot.sent.length, 1, "digest should still be delivered");
   assert.equal(evaluationSummary, "Good selection, but connections could be stronger.");
+  assert.ok(logger.logs.some((line) => line.startsWith("[feeds] test-agent: Digest quality:")));
 
   const qualityLines = readFileSync(qualityPath, "utf-8").trim().split("\n");
   assert.equal(qualityLines.length, 1);
