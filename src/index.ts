@@ -302,14 +302,14 @@ async function main(): Promise<void> {
   // ── Startup log ───────────────────────────────────────────────────
 
   const toolNames = registry.getAll().map((tool) => tool.name).sort();
-  const agentSummary = manager.getAllAgents()
-    .map(a => {
-      const count = a.raw.channel_ids.length;
-      return `${a.id} (${count} ${count === 1 ? "channel" : "channels"})`;
-    })
-    .join(", ");
   console.log("[core] Newsteam swarm online");
-  console.log(`[core]   Agents: ${agentSummary}`);
+  console.log("[core]   Agents:");
+  for (const agent of manager.getAllAgents()) {
+    const channelCount = agent.raw.channel_ids.length;
+    const feedStatus = agent.config.feeds?.enabled ? "enabled" : "disabled";
+    const channels = channelCount === 1 ? "channel" : "channels";
+    console.log(`[core]     ${agent.id}: feeds ${feedStatus}, ${channelCount} ${channels}`);
+  }
   console.log(`[core]   Tools: ${toolNames.join(", ") || "none"}`);
 }
 
