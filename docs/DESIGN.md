@@ -1,6 +1,6 @@
-# Newsteam Design
+# NewsTeam Design
 
-Newsteam is a self-hosted Discord bot harness for running personality-driven AI
+NewsTeam is a self-hosted Discord bot harness for running personality-driven AI
 news analysts. It is intentionally small: one Node.js process coordinates
 Discord, model providers, feeds, tools, budgets, memory, and a local dashboard.
 

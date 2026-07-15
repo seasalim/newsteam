@@ -28,7 +28,7 @@ function main() {
   if (!personaDir) {
     fail(
       "missing_tool_context",
-      "Memory path was not provided by the Newsteam runtime.",
+      "Memory path was not provided by the NewsTeam runtime.",
     );
     return;
   }

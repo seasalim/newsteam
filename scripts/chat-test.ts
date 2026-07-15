@@ -1,6 +1,6 @@
 #!/usr/bin/env node --experimental-strip-types
 /**
- * Quick interactive chat test for the Newsteam agent loop.
+ * Quick interactive chat test for the NewsTeam agent loop.
  * Run: node --experimental-strip-types scripts/chat-test.ts
  */
 import { createInterface } from "node:readline";
@@ -32,7 +32,7 @@ const rl = createInterface({
   output: process.stdout,
 });
 
-console.log("🦞 Newsteam chat test (Ctrl+C to quit)");
+console.log("🦞 NewsTeam chat test (Ctrl+C to quit)");
 console.log(`   Model: ${cfg.budget.model}`);
 console.log(`   Budget: ${cfg.budget.max_turns} turns, ${cfg.budget.max_session_cost_cents}¢ max`);
 console.log("");

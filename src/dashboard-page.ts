@@ -5,7 +5,7 @@ export const HTML_PAGE = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Newsteam — Mission Control</title>
+<title>NewsTeam — Mission Control</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 <style>
   :root {
@@ -85,7 +85,7 @@ export const HTML_PAGE = `<!DOCTYPE html>
 <body>
 
 <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode"></button>
-<h1>Newsteam — Mission Control</h1>
+<h1>NewsTeam — Mission Control</h1>
 <div class="subtitle">localhost dashboard — auto-refreshes every 30s</div>
 
 <div class="grid">

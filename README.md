@@ -1,10 +1,10 @@
-# Newsteam 🦞
+# NewsTeam 🦞
 
 [![CI](https://github.com/seasalim/newsteam/actions/workflows/ci.yml/badge.svg)](https://github.com/seasalim/newsteam/actions/workflows/ci.yml)
 
 > *Your personal news team, for free or a dime a day.*
 
-Newsteam is an agent harness that can create a team of AI news aggregators and analysts with distinct personalities: they read RSS feeds, post opinionated digests to Discord at specified intervals, grade their sources, produce a weekly synthesis, and never exceed a max set budget.
+NewsTeam is an agent harness that can create a team of AI news aggregators and analysts with distinct personalities: they read RSS feeds, post opinionated digests to Discord at specified intervals, grade their sources, produce a weekly synthesis, and never exceed a max set budget.
 
 Personas make each analyst fun and interesting, while hard cost caps keeps the stress level minimal.
 
@@ -18,8 +18,8 @@ The real-world receipt is roughly **$0.10/day for three digests, twice daily, on
 
 **Want it completely free?** Two options, both supported out of the box:
 
-- **Gemini free tier.** Grab an API key from [Google AI Studio](https://aistudio.google.com) *without attaching billing* and you're done — the default model in `config.example.yaml` is already `google/gemini-3-flash-preview`, which the free tier covers. Free-tier [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) are generous enough for Newsteam's digest cadence.
-- **Fully local.** Point the OpenAI provider at [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) — both serve the OpenAI-compatible `/v1/responses` endpoint Newsteam uses. No code changes needed:
+- **Gemini free tier.** Grab an API key from [Google AI Studio](https://aistudio.google.com) *without attaching billing* and you're done — the default model in `config.example.yaml` is already `google/gemini-3-flash-preview`, which the free tier covers. Free-tier [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) are generous enough for NewsTeam's digest cadence.
+- **Fully local.** Point the OpenAI provider at [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) — both serve the OpenAI-compatible `/v1/responses` endpoint NewsTeam uses. No code changes needed:
 
   ```bash
   OPENAI_BASE_URL=http://localhost:11434/v1   # Ollama (LM Studio: http://localhost:1234/v1)
@@ -76,7 +76,7 @@ Each active persona lives in `persona/<agent>/` and is private to the deployment
 - `LENS.md` defines the analytical framework and digest style.
 - `feeds.json` registers RSS sources and fetch guidance.
 
-Newsteam creates memory and feed-state artifacts at runtime. Start with [KingClawd or The Analyst](examples/personas/README.md), then edit the files to make the analyst yours.
+NewsTeam creates memory and feed-state artifacts at runtime. Start with [KingClawd or The Analyst](examples/personas/README.md), then edit the files to make the analyst yours.
 
 ## Configuration
 

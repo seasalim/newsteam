@@ -1,6 +1,6 @@
-# Contributing to Newsteam
+# Contributing to NewsTeam
 
-Thanks for helping improve Newsteam. Keep changes focused, explain the user
+Thanks for helping improve NewsTeam. Keep changes focused, explain the user
 impact, and include tests for behavior changes.
 
 ## Development setup

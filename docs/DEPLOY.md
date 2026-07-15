@@ -1,9 +1,9 @@
 # Deployment
 
-Newsteam is a single Node.js process. The Python tools use only the standard
+NewsTeam is a single Node.js process. The Python tools use only the standard
 library, so there is no pip installation step.
 
-Newsteam is published at `github.com/seasalim/newsteam`. Create a clean
+NewsTeam is published at `github.com/seasalim/newsteam`. Create a clean
 checkout with:
 
 ```bash
@@ -58,7 +58,7 @@ Save this unit as `/etc/systemd/system/newsteam.service`:
 
 ```ini
 [Unit]
-Description=Newsteam Discord news team
+Description=NewsTeam Discord news team
 After=network-online.target
 Wants=network-online.target
 

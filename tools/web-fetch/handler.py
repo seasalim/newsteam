@@ -46,7 +46,7 @@ if not url.startswith(("http://", "https://")):
     sys.exit(0)
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (compatible; Newsteam/1.0; +https://github.com/seasalim/newsteam)",
+    "User-Agent": "Mozilla/5.0 (compatible; NewsTeam/1.0; +https://github.com/seasalim/newsteam)",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Encoding": "gzip",
 }

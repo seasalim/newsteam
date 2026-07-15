@@ -28,7 +28,7 @@ cp -r examples/personas/kingclawd persona/kingclawd
 
 Replace `kingclawd` with any persona name from the table. Add the matching
 agent entry to `config.yaml`, set its Discord channel IDs, and restart
-Newsteam. The `persona_dir` should point to the copied directory, for example
+NewsTeam. The `persona_dir` should point to the copied directory, for example
 `persona/kingclawd`.
 
 ## What each file controls
@@ -43,5 +43,5 @@ Agents create and maintain `MEMORY.md`, `feeds_state.json`,
 `feeds_pending.json`, `feed_context.json`, `digest_archive.json`,
 `digest_quality.jsonl`, and `feed_source_review.json` as needed while running.
 Keep the active `persona/` directory private; it is ignored by Git.
-Shared security guardrails are injected by Newsteam and therefore do not need
+Shared security guardrails are injected by NewsTeam and therefore do not need
 to be duplicated in each `IDENTITY.md`.

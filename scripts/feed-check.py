@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
-USER_AGENT = "Newsteam/1.0 (+https://github.com/seasalim/newsteam)"
+USER_AGENT = "NewsTeam/1.0 (+https://github.com/seasalim/newsteam)"
 ATOM_NAMESPACE = "http://www.w3.org/2005/Atom"
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_FEEDS_PATH = ROOT_DIR / "persona" / "feeds.json"

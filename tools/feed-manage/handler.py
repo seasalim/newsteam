@@ -242,7 +242,7 @@ def handle(
             return {
                 "ok": False,
                 "error": "missing_tool_context",
-                "message": "Feed paths were not provided by the Newsteam runtime.",
+                "message": "Feed paths were not provided by the NewsTeam runtime.",
             }
         base_path = Path(persona_dir).resolve()
         feeds_path = base_path / "feeds.json"

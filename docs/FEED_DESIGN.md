@@ -1,6 +1,6 @@
 # Feed Pipeline Design
 
-Newsteam turns RSS and Atom sources into scheduled, personality-driven Discord
+NewsTeam turns RSS and Atom sources into scheduled, personality-driven Discord
 digests. The pipeline separates cheap deterministic detection from model-based
 narration so an empty polling cycle costs no model tokens.
 

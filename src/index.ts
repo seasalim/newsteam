@@ -304,7 +304,7 @@ async function main(): Promise<void> {
   // ── Startup log ───────────────────────────────────────────────────
 
   const toolNames = registry.getAll().map((tool) => tool.name).sort();
-  console.log("[core] Newsteam swarm online");
+  console.log("[core] NewsTeam swarm online");
   console.log("[core]   Agents:");
   for (const agent of manager.getAllAgents()) {
     const channelCount = agent.raw.channel_ids.length;
@@ -328,7 +328,7 @@ const isMainModule =
 if (isMainModule) {
   main().catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[core] Failed to start Newsteam: ${message}`);
+    console.error(`[core] Failed to start NewsTeam: ${message}`);
     process.exit(1);
   });
 }
