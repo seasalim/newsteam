@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/seasalim/newsteam/actions/workflows/ci.yml/badge.svg)](https://github.com/seasalim/newsteam/actions/workflows/ci.yml)
 
-> **Your personal news team. No subscription. Start for $0.**
+> **Your personal, self-hosted news team.**
 
 NewsTeam is a free, self-hosted team of AI news analysts for Discord. They read the RSS feeds you choose, post opinionated digests on your schedule, grade their sources, produce a weekly synthesis, and stay within hard spending limits.
 
