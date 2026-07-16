@@ -2,31 +2,23 @@
 
 [![CI](https://github.com/seasalim/newsteam/actions/workflows/ci.yml/badge.svg)](https://github.com/seasalim/newsteam/actions/workflows/ci.yml)
 
-> *Your personal news team, for free or a dime a day.*
+> **Your personal news team. No subscription. Start for $0.**
 
-NewsTeam is an agent harness that can create a team of AI news aggregators and analysts with distinct personalities: they read RSS feeds, post opinionated digests to Discord at specified intervals, grade their sources, produce a weekly synthesis, and never exceed a max set budget.
+NewsTeam is a free, self-hosted team of AI news analysts for Discord. They read the RSS feeds you choose, post opinionated digests on your schedule, grade their sources, produce a weekly synthesis, and stay within hard spending limits.
 
-Personas make each analyst fun and interesting, while hard cost caps keeps the stress level minimal.
+Each analyst has a distinct personality and point of view, so the result feels less like a generic summary and more like a briefing from someone whose judgment you understand.
 
-The whole system is roughly 8,000 lines of code, has minimal dependencies, uses no agent framework, and has a tiny tool set - easily inspectable and low footprint.
+**Free to start · Self-hosted · Hard spending caps · Open source**
 
-![KingClawd Discord sample](docs/assets/kingclawd_screenshot.png)
+## Start for $0
 
-## What it costs: $0.10/day — or $0
+The recommended setup uses the Gemini free tier and does not require a billing account.
 
-The real-world receipt is roughly **$0.10/day for three digests, twice daily, on `google/gemini-3-flash-preview`**. Actual cost scales with model choice, feed volume, digest frequency, and how often an analyst fetches full articles, so YMMV (but not by much).
+Get an API key from [Google AI Studio](https://aistudio.google.com) without attaching billing. The default `google/gemini-3-flash-preview` model in `config.example.yaml` supports the free tier, whose limits are enough for a typical NewsTeam digest schedule. Availability and [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by account and region.
 
-**Want it completely free?** Two options, both supported out of the box:
+### Need more capacity?
 
-- **Gemini free tier.** Grab an API key from [Google AI Studio](https://aistudio.google.com) *without attaching billing* and you're done — the default model in `config.example.yaml` is already `google/gemini-3-flash-preview`, which the free tier covers. Free-tier [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) are generous enough for NewsTeam's digest cadence.
-- **Fully local.** Point the OpenAI provider at [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) — both serve the OpenAI-compatible `/v1/responses` endpoint NewsTeam uses. No code changes needed:
-
-  ```bash
-  OPENAI_BASE_URL=http://localhost:11434/v1   # Ollama (LM Studio: http://localhost:1234/v1)
-  OPENAI_API_KEY=local                        # any non-empty string
-  ```
-
-  Then set `model: openai/qwen3:8b` (or your local model of choice) in `config.yaml`. Nothing leaves your machine, there are no rate limits, and the only cost is electricity. Expect small local models to be a step down from Gemini Flash in tool use and persona voice.
+Paid capacity is optional. Enable billing only if you outgrow the Gemini free tier; NewsTeam records model-specific usage and enforces hard per-session cost caps. One real-world paid-tier run costs roughly **$0.10/day for three digests delivered twice daily on `google/gemini-3-flash-preview`**. Actual cost depends on feed volume, digest frequency, and how often an analyst fetches full articles.
 
 ## Features
 
@@ -41,9 +33,11 @@ The real-world receipt is roughly **$0.10/day for three digests, twice daily, on
 - **Memory.** Each persona keeps a small, bounded, agent-managed memory file.
 - **Dashboard.** Local mission control reports agents, feeds, activity, and spend at `http://127.0.0.1:7777`.
 
+NewsTeam is roughly 8,000 lines of code, has minimal dependencies, uses no agent framework, and has a deliberately small tool set, making it easy to inspect and inexpensive to run.
+
 ## Quickstart (Docker)
 
-Prerequisites: Docker Desktop or Docker Engine, a Discord bot token, and a Google, Anthropic, or OpenAI API key (a free-tier [Google AI Studio](https://aistudio.google.com) key works — see [What it costs](#what-it-costs-010day--or-0)).
+**Free setup:** Docker, a Discord bot token, and a [Google AI Studio](https://aistudio.google.com) API key with billing disabled.
 
 ```bash
 git clone https://github.com/seasalim/newsteam.git
@@ -61,6 +55,8 @@ docker compose up -d --build
 docker compose logs -f newsteam
 ```
 
+Once the bot is online, run `/refresh` in its Discord channel to fetch the starter feeds and generate your first digest immediately. Scheduled digests continue from there.
+
 ### How to get your Discord IDs
 
 In Discord, enable **User Settings → Advanced → Developer Mode**. Right-click your user and choose **Copy User ID** for `allowed_user_id`; right-click each destination channel and choose **Copy Channel ID** for `channel_ids` and `feeds.channel_id`. Create a bot in the Discord Developer Portal, enable the Message Content intent, invite it to the server with permission to view and send messages, and put its token in `.env`.
@@ -77,10 +73,6 @@ Each active persona lives in `persona/<agent>/` and is private to the deployment
 - `feeds.json` registers RSS sources and fetch guidance.
 
 NewsTeam creates memory and feed-state artifacts at runtime. Start with [KingClawd or The Analyst](examples/personas/README.md), then edit the files to make the analyst yours.
-
-## Configuration
-
-Copy `config.example.yaml` to `config.yaml`. Its comments cover model selection, budget limits, Discord channels, feed schedules, and weekly synthesis. For the runtime architecture and configuration model, see [Design](docs/DESIGN.md); for the feed pipeline, see [Feed Design](docs/FEED_DESIGN.md).
 
 ## Deploying
 

@@ -2,7 +2,7 @@
   "name": "newsteam",
   "version": "0.1.0",
   "private": true,
-  "description": "Your personal news team, for free or a dime a day. Self-hosted AI news analysts with personality for Discord.",
+  "description": "Your personal news team. No subscription. Start for $0. Self-hosted AI news analysts with personality for Discord.",
   "license": "MIT",
   "repository": "github:seasalim/newsteam",
   "engines": {

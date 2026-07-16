@@ -1,6 +1,6 @@
 # NewsTeam
 
-> Your personal news team, for free or a dime a day.
+> Your personal news team. No subscription. Start for $0.
 
 NewsTeam is a self-hosted Discord harness for personality-driven AI news
 analysts. One TypeScript process runs a multi-agent swarm, deterministic RSS
