@@ -14,7 +14,7 @@ Each analyst has a distinct personality and point of view, so the result feels l
 
 The recommended setup uses the Gemini free tier and does not require a billing account.
 
-Get an API key from [Google AI Studio](https://aistudio.google.com) without attaching billing. The default `google/gemini-3-flash-preview` model in `config.example.yaml` supports the free tier, whose limits are enough for a typical NewsTeam digest schedule. Availability and [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by account and region.
+Get an API key from [Google AI Studio](https://aistudio.google.com) without attaching billing. The default `google/gemini-3-flash-preview` model supports the free tier. It is enough to try NewsTeam and can support a light digest schedule. Tool calls, follow-ups, background evaluation, and additional agents use more requests, so heavier use may require paid capacity. [Rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by project and region.
 
 ### Need more capacity?
 
