@@ -45,8 +45,18 @@ export function formatDemoError(error: unknown): string {
   if (/GOOGLE_API_KEY is required/u.test(message)) {
     return message;
   }
+
+  if (/PerDay|requests?\s+per\s+day|daily\s+(?:request|quota|limit)/iu.test(message)) {
+    const limit = message.match(/limit["'\s:]+(\d+)/iu)?.[1];
+    return `Gemini's daily${limit ? ` ${limit}-request` : ""} limit was reached. It resets at midnight Pacific Time. API keys from the same Google Cloud project share this quota. Check usage at https://ai.dev/rate-limit.`;
+  }
+
+  if (/PerMinute|requests?\s+per\s+minute|tokens?\s+per\s+minute/iu.test(message)) {
+    return "Gemini's short-term rate limit was reached. Wait a minute, then run the demo again.";
+  }
+
   if (/429|RESOURCE_EXHAUSTED|rate limit/iu.test(message)) {
-    return "Gemini's free-tier limit was reached. Wait a minute, then run the demo again.";
+    return "Gemini reached a rate or quota limit. Check the reset time at https://ai.dev/rate-limit, then run the demo again.";
   }
   if (/API.?key|PERMISSION_DENIED|401|403/iu.test(message)) {
     return "Google rejected the API key. Check GOOGLE_API_KEY in .env and try again.";

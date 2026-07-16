@@ -42,7 +42,21 @@ test("formatDemoError gives actionable Google API guidance", () => {
     formatDemoError(new Error("GOOGLE_API_KEY is required. Get a free key.")),
     /Get a free key/u,
   );
-  assert.match(formatDemoError(new Error("429 RESOURCE_EXHAUSTED")), /free-tier limit/u);
+  const dailyQuotaError = new Error(
+    "429 RESOURCE_EXHAUSTED quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier, limit: 20",
+  );
+  assert.equal(
+    formatDemoError(dailyQuotaError),
+    "Gemini's daily 20-request limit was reached. It resets at midnight Pacific Time. API keys from the same Google Cloud project share this quota. Check usage at https://ai.dev/rate-limit.",
+  );
+  assert.match(
+    formatDemoError(new Error("429 quotaId: GenerateRequestsPerMinutePerProject-FreeTier")),
+    /Wait a minute/u,
+  );
+  assert.match(
+    formatDemoError(new Error("429 RESOURCE_EXHAUSTED")),
+    /https:\/\/ai\.dev\/rate-limit/u,
+  );
   assert.match(formatDemoError(new Error("403 API key invalid")), /GOOGLE_API_KEY/u);
   assert.equal(formatDemoError(new Error("Feed parser failed")), "Feed parser failed");
 });
