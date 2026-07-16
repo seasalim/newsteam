@@ -10,9 +10,12 @@ COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY config.example.yaml ./
 COPY src ./src
 COPY tools ./tools
 COPY scripts ./scripts
+COPY examples/demo-items.json ./examples/demo-items.json
+COPY examples/personas/kingclawd ./examples/personas/kingclawd
 
 RUN npm run build
 

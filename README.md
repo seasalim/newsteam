@@ -20,6 +20,22 @@ Get an API key from [Google AI Studio](https://aistudio.google.com) without atta
 
 Paid capacity is optional. Enable billing only if you outgrow the Gemini free tier; NewsTeam records model-specific usage and enforces hard per-session cost caps. One real-world paid-tier run costs roughly **$0.10/day for three digests delivered twice daily on `google/gemini-3-flash-preview`**. Actual cost depends on feed volume, digest frequency, and how often an analyst fetches full articles.
 
+## Quickstart: try it in your terminal
+
+The console demo generates a real KingClawd briefing from the starter feeds, then lets you ask follow-up questions. It needs no Discord bot, channel IDs, or `config.yaml`.
+
+```bash
+git clone https://github.com/seasalim/newsteam.git
+cd newsteam
+cp .env.example .env
+# Add only your GOOGLE_API_KEY to .env, then run:
+docker compose run --build --rm demo
+```
+
+If the live feeds are temporarily unavailable, NewsTeam uses a bundled sample so you can still see the full briefing experience. Nothing is written to your repository; demo memory and feed state are deleted when the process exits.
+
+Already have Node.js 22+ and Python 3 installed? Run `npm ci && npm run demo` instead.
+
 ## Features
 
 - **Analyst personas.** Each analyst is a character you define — its own voice (`IDENTITY.md`), ranked interests (`INTERESTS.md`), and analytical lens (`LENS.md`) — so digests read like opinionated commentary from someone with a worldview, not neutral summaries.
@@ -35,20 +51,17 @@ Paid capacity is optional. Enable billing only if you outgrow the Gemini free ti
 
 NewsTeam is roughly 8,000 lines of code, has minimal dependencies, uses no agent framework, and has a deliberately small tool set, making it easy to inspect and inexpensive to run.
 
-## Quickstart (Docker)
+## Keep it running in Discord
 
-**Free setup:** Docker, a Discord bot token, and a [Google AI Studio](https://aistudio.google.com) API key with billing disabled.
+Once you like the demo, connect NewsTeam to Discord for scheduled briefings and chat. You will need Docker, a Discord bot token, and the same free [Google AI Studio](https://aistudio.google.com) API key.
 
 ```bash
-git clone https://github.com/seasalim/newsteam.git
-cd newsteam
-cp .env.example .env
 cp config.example.yaml config.yaml
 mkdir -p persona logs
 cp -r examples/personas/kingclawd persona/kingclawd
 ```
 
-Fill in `.env`, replace the Discord placeholders in `config.yaml`, then start the bot:
+Add `DISCORD_TOKEN` to `.env`, replace the Discord placeholders in `config.yaml`, then start the bot:
 
 ```bash
 docker compose up -d --build

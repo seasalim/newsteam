@@ -1,6 +1,15 @@
 name: newsteam
 
 services:
+  demo:
+    profiles: ["demo"]
+    build: .
+    env_file:
+      - .env
+    command: ["node", "dist/demo.js"]
+    stdin_open: true
+    tty: true
+
   newsteam:
     build: .
     env_file:

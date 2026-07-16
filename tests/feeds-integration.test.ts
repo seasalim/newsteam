@@ -287,6 +287,26 @@ test("buildFeedDigestPrompt warns against unsupported causal claims", () => {
   assert.ok(prompt.includes("general analysis or commentary piece"), "should distinguish commentary from event evidence");
 });
 
+test("buildFeedDigestPrompt targets the console without changing the Discord default", () => {
+  const items = [{
+    feed_name: "Test Feed",
+    title: "Test item",
+    url: "https://example.com/item",
+    snippet: "Test snippet",
+  }];
+
+  const discordPrompt = buildFeedDigestPrompt(items);
+  const consolePrompt = buildFeedDigestPrompt(items, [], "", "", undefined, {
+    deliveryTarget: "console",
+  });
+
+  assert.match(discordPrompt, /posted DIRECTLY to the Discord channel/u);
+  assert.doesNotMatch(discordPrompt, /printed DIRECTLY in a terminal/u);
+  assert.match(consolePrompt, /printed DIRECTLY in a terminal/u);
+  assert.doesNotMatch(consolePrompt, /Discord/u);
+  assert.match(consolePrompt, /work well in a terminal/u);
+});
+
 test("buildFeedDigestPrompt raises fetch expectations for large digests", () => {
   const items = Array.from({ length: 16 }, (_, index) => ({
     feed_id: "thin-feed",

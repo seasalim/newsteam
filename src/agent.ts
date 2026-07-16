@@ -137,7 +137,12 @@ export class AgentLoop {
   async chat(
     userMessage: string,
     channelId?: string,
-    options?: { maxTurns?: number; model?: string; thinkingLevel?: ThinkingLevel },
+    options?: {
+      maxTurns?: number;
+      model?: string;
+      thinkingLevel?: ThinkingLevel;
+      throwOnApiError?: boolean;
+    },
   ): Promise<AgentResponse> {
     this.lastActivityAt = Date.now();
     this.lastToolCalls = [];
@@ -242,6 +247,9 @@ export class AgentLoop {
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         this.logger?.emit("agent.api.failed", this.logData({ error: errMsg, turns: turnsUsed }));
+        if (options?.throwOnApiError) {
+          throw err;
+        }
         finalContent = "🦞 My brain is temporarily offline. Please try again in a minute.";
         break;
       }

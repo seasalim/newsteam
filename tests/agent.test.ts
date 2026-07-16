@@ -1363,6 +1363,36 @@ test("chat returns brain-offline message after all retries fail", async () => {
   assert.equal(callCount, 3);
 });
 
+test("chat can propagate API failures for interactive console clients", async () => {
+  const personaDir = createTempPath("persona");
+  const budget = new BudgetTracker(createBudgetConfig());
+  const memory = new MemoryManager(createTempPath("MEMORY.md"), 1500);
+  let callCount = 0;
+
+  const mockClient = toLLMClient({
+    messages: {
+      async create() {
+        callCount++;
+        throw new Error("API key rejected");
+      },
+    },
+  } as LegacyClient);
+
+  const agent = new AgentLoop({
+    config: createConfig(personaDir),
+    budget,
+    memory,
+    llmClient: mockClient,
+    retryBaseDelayMs: 0,
+  });
+
+  await assert.rejects(
+    agent.chat("hello", undefined, { throwOnApiError: true }),
+    { message: "API key rejected" },
+  );
+  assert.equal(callCount, 3);
+});
+
 test("chat retries do not exceed max attempts", async () => {
   const personaDir = createTempPath("persona");
   const budget = new BudgetTracker(createBudgetConfig());

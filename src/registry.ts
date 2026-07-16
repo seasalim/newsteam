@@ -84,7 +84,7 @@ export class ToolRegistry {
     this.toolsDir = toolsDir;
   }
 
-  loadAll(): void {
+  loadAll(options: { availableSecretsOnly?: boolean } = {}): void {
     if (!existsSync(this.toolsDir)) {
       return;
     }
@@ -120,6 +120,12 @@ export class ToolRegistry {
       }
 
       const manifest = raw as unknown as ToolManifest;
+      if (
+        options.availableSecretsOnly === true &&
+        manifest.secrets.some((secret) => !process.env[secret])
+      ) {
+        continue;
+      }
       this.manifests.set(manifest.name, manifest);
     }
   }

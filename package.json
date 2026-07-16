@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "demo": "npm run build --silent && node dist/demo.js",
     "start": "node dist/index.js",
     "deploy": "tsc && launchctl kickstart -k gui/$(id -u)/com.newsteam",
     "test": "node --experimental-strip-types --experimental-transform-types --test tests/*.test.ts"

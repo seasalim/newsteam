@@ -91,8 +91,11 @@ export type PendingRetentionOptions = {
   nowMs?: number;
 };
 
-type FeedCheckResult = {
+export type FeedCheckResult = {
   new_items?: FeedItem[];
+  feeds_checked?: number;
+  feeds_skipped?: number;
+  errors?: Array<{ feed_id: string; error: string }>;
 };
 
 type FeedLogger = Pick<Console, "log" | "error">;

@@ -49,6 +49,32 @@ test("loadAll loads valid manifests from tool directories", () => {
   assert.deepEqual(registry.get("web_search"), VALID_MANIFEST);
 });
 
+test("loadAll can skip tools whose declared secrets are unavailable", () => {
+  const toolsDir = createToolsDir();
+  addMockTool(toolsDir, "web-search", VALID_MANIFEST);
+  addMockTool(toolsDir, "web-fetch", {
+    ...VALID_MANIFEST,
+    name: "web_fetch",
+    secrets: [],
+  });
+
+  const previous = process.env.BRAVE_API_KEY;
+  delete process.env.BRAVE_API_KEY;
+  try {
+    const registry = new ToolRegistry(toolsDir);
+    registry.loadAll({ availableSecretsOnly: true });
+
+    assert.equal(registry.get("web_search"), undefined);
+    assert.ok(registry.get("web_fetch"));
+  } finally {
+    if (previous === undefined) {
+      delete process.env.BRAVE_API_KEY;
+    } else {
+      process.env.BRAVE_API_KEY = previous;
+    }
+  }
+});
+
 test("loadAll skips tool directories without manifest.json", () => {
   const toolsDir = createToolsDir();
   mkdirSync(path.join(toolsDir, "disabled-tool"));
