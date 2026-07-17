@@ -23,6 +23,7 @@ import { MemoryManager } from "./memory.js";
 import { getModelProvider } from "./model.js";
 import { createGeminiClient } from "./provider-gemini.js";
 import { ToolRegistry } from "./registry.js";
+import { renderTerminalMarkdown } from "./terminal-markdown.js";
 import {
   createDemoWorkspace,
   formatDemoError,
@@ -80,7 +81,7 @@ async function runFollowUpLoop(
     const response = await agent.chat(input, DEMO_CHANNEL_ID, {
       throwOnApiError: true,
     });
-    console.log(`\nKingClawd: ${response.content}`);
+    console.log(`\nKingClawd:\n${renderTerminalMarkdown(response.content)}`);
     console.log(`${budget.formatInline()}\n`);
   }
 
@@ -195,7 +196,7 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       throwOnApiError: true,
     });
 
-    console.log(response.content);
+    console.log(renderTerminalMarkdown(response.content));
     console.log(`\n${budget.formatInline()}`);
     await runFollowUpLoop(agent, budget);
     memory.flush();
