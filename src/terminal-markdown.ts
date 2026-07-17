@@ -3,6 +3,7 @@ import { stripVTControlCharacters } from "node:util";
 export interface TerminalMarkdownOptions {
   isTTY?: boolean;
   colors?: boolean;
+  width?: number;
 }
 
 const ANSI = {
@@ -68,6 +69,41 @@ function renderInline(
   ));
 }
 
+function visibleLength(value: string): number {
+  return [...stripVTControlCharacters(value)].length;
+}
+
+function wrapLine(
+  content: string,
+  firstPrefix: string,
+  continuationPrefix: string,
+  width: number,
+): string[] {
+  const words = content.trim().split(/\s+/u);
+  if (words.length === 1 && words[0] === "") return [firstPrefix];
+
+  const lines: string[] = [];
+  let prefix = firstPrefix;
+  let line = "";
+
+  for (const word of words) {
+    const separator = line.length > 0 ? " " : "";
+    if (
+      line.length > 0 &&
+      visibleLength(prefix) + visibleLength(line) + 1 + visibleLength(word) > width
+    ) {
+      lines.push(`${prefix}${line}`);
+      prefix = continuationPrefix;
+      line = word;
+    } else {
+      line += `${separator}${word}`;
+    }
+  }
+
+  lines.push(`${prefix}${line}`);
+  return lines;
+}
+
 /**
  * Render the small Markdown subset used by console demo responses.
  * Non-interactive output keeps its Markdown so redirects remain useful.
@@ -81,6 +117,8 @@ export function renderTerminalMarkdown(
   if (!isTTY) return sanitized;
 
   const colors = options.colors ?? terminalColorsEnabled();
+  const terminalWidth = options.width ?? (process.stdout.columns || 80);
+  const width = Math.max(20, Math.min(Math.floor(terminalWidth), 100));
   const style = createStyler(colors);
   const output: string[] = [];
   let fence: "```" | "~~~" | null = null;
@@ -106,34 +144,51 @@ export function renderTerminalMarkdown(
 
     const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/u);
     if (heading) {
-      output.push(style(renderInline(heading[1], style), ANSI.bold, ANSI.cyan));
+      output.push(...wrapLine(renderInline(heading[1], style), "", "", width)
+        .map((part) => style(part, ANSI.bold, ANSI.cyan)));
       continue;
     }
 
     if (/^\s{0,3}(?:(?:\*|-|_)\s*){3,}$/u.test(line)) {
-      output.push(style("─".repeat(48), ANSI.dim));
+      output.push(style("─".repeat(Math.min(48, width)), ANSI.dim));
       continue;
     }
 
     const quote = line.match(/^\s*>\s?(.*)$/u);
     if (quote) {
-      output.push(`${style("│", ANSI.cyan)} ${style(renderInline(quote[1], style), ANSI.dim)}`);
+      const prefix = `${style("│", ANSI.cyan)} `;
+      output.push(...wrapLine(
+        style(renderInline(quote[1], style), ANSI.dim),
+        prefix,
+        prefix,
+        width,
+      ));
       continue;
     }
 
     const unordered = line.match(/^(\s*)[-+*]\s+(.+)$/u);
     if (unordered) {
-      output.push(`${unordered[1]}${style("•", ANSI.cyan)} ${renderInline(unordered[2], style)}`);
+      const prefix = `${unordered[1]}${style("•", ANSI.cyan)} `;
+      const continuation = " ".repeat(visibleLength(prefix));
+      output.push(...wrapLine(renderInline(unordered[2], style), prefix, continuation, width));
       continue;
     }
 
     const ordered = line.match(/^(\s*)(\d+)[.)]\s+(.+)$/u);
     if (ordered) {
-      output.push(`${ordered[1]}${style(`${ordered[2]}.`, ANSI.cyan)} ${renderInline(ordered[3], style)}`);
+      const prefix = `${ordered[1]}${style(`${ordered[2]}.`, ANSI.cyan)} `;
+      const continuation = " ".repeat(visibleLength(prefix));
+      output.push(...wrapLine(renderInline(ordered[3], style), prefix, continuation, width));
       continue;
     }
 
-    output.push(renderInline(line, style));
+    const plain = line.match(/^(\s*)(.*)$/u)!;
+    output.push(...wrapLine(
+      renderInline(plain[2], style),
+      plain[1],
+      plain[1],
+      width,
+    ));
   }
 
   return output.join("\n");

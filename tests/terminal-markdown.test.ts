@@ -42,6 +42,47 @@ test("renders readable plain text when colors are disabled", () => {
   assert.doesNotMatch(output, /\u001b/u);
 });
 
+test("wraps prose to the requested terminal width", () => {
+  const output = renderTerminalMarkdown(
+    "This briefing has enough words to wrap cleanly across several terminal lines.",
+    { isTTY: true, colors: false, width: 24 },
+  );
+
+  assert.equal(
+    output,
+    "This briefing has enough\nwords to wrap cleanly\nacross several terminal\nlines.",
+  );
+  for (const line of output.split("\n")) assert.ok(line.length <= 24);
+});
+
+test("uses hanging indentation for wrapped lists and repeats quote markers", () => {
+  const output = renderTerminalMarkdown([
+    "- A long list item that wraps onto another line cleanly",
+    "12. A numbered item that also needs another line",
+    "> A quoted observation that wraps onto another line",
+  ].join("\n"), { isTTY: true, colors: false, width: 28 });
+
+  assert.equal(output, [
+    "• A long list item that",
+    "  wraps onto another line",
+    "  cleanly",
+    "12. A numbered item that",
+    "    also needs another line",
+    "│ A quoted observation that",
+    "│ wraps onto another line",
+  ].join("\n"));
+});
+
+test("caps wrapping at a readable width in wide terminals", () => {
+  const output = renderTerminalMarkdown("word ".repeat(30).trim(), {
+    isTTY: true,
+    colors: false,
+    width: 200,
+  });
+
+  assert.ok(output.split("\n").every((line) => line.length <= 100));
+});
+
 test("preserves fenced code contents without interpreting inline Markdown", () => {
   const output = renderTerminalMarkdown(
     "```ts\nconst marker = \"**literal**\";\n```",
