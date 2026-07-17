@@ -22,17 +22,18 @@ Paid capacity is optional. Enable billing only if you outgrow the Gemini free ti
 
 ## Quickstart: try it in your terminal
 
-The console demo generates a real KingClawd briefing from the starter feeds, then lets you ask follow-up questions. It needs no Discord bot, channel IDs, or `config.yaml`.
+The console demo lets you choose from six analyst personas, generates a real briefing from that persona's starter feeds, then lets you ask follow-up questions. It needs no Discord bot, channel IDs, or `config.yaml`.
 
 ```bash
 git clone https://github.com/seasalim/newsteam.git
 cd newsteam
 cp .env.example .env
-# Add only your GOOGLE_API_KEY to .env, then run:
 docker compose run --build --rm demo
 ```
 
-If the live feeds are temporarily unavailable, NewsTeam uses a bundled sample so you can still see the full briefing experience. Nothing is written to your repository; demo memory and feed state are deleted when the process exits.
+If `GOOGLE_API_KEY` is blank, NewsTeam points you to Google AI Studio and prompts for the key without displaying it. The entered key stays in memory for that run only; add it to `.env` to skip the prompt later. NewsTeam then presents each persona with a one-line description so you can choose the briefing style.
+
+The demo reads the selected persona's real starter feeds. Nothing is written to your repository; entered keys, demo memory, and feed state are discarded when the process exits.
 
 Already have Node.js 22+ and Python 3 installed? Run `npm ci && npm run demo` instead.
 

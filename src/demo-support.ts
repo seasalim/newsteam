@@ -1,10 +1,8 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { FeedItem } from "./feeds.ts";
-
-const DEMO_AGENT_ID = "kingclawd";
+import { DEFAULT_PERSONA_ID } from "./onboarding.ts";
 
 export interface DemoWorkspace {
   rootDir: string;
@@ -12,14 +10,25 @@ export interface DemoWorkspace {
   cleanup(): void;
 }
 
+export interface DemoWorkspaceOptions {
+  personaId?: string;
+  tempParent?: string;
+}
+
 export function createDemoWorkspace(
   projectRoot = process.cwd(),
-  tempParent = tmpdir(),
+  options: DemoWorkspaceOptions = {},
 ): DemoWorkspace {
+  const personaId = options.personaId ?? DEFAULT_PERSONA_ID;
+  if (!/^[a-z0-9][a-z0-9-]*$/u.test(personaId)) {
+    throw new Error(`Invalid demo persona ID: ${personaId}`);
+  }
+
+  const tempParent = options.tempParent ?? tmpdir();
   const rootDir = mkdtempSync(path.join(tempParent, "newsteam-demo-"));
-  const personaDir = path.join(rootDir, DEMO_AGENT_ID);
+  const personaDir = path.join(rootDir, personaId);
   try {
-    cpSync(path.join(projectRoot, "examples", "personas", DEMO_AGENT_ID), personaDir, {
+    cpSync(path.join(projectRoot, "examples", "personas", personaId), personaDir, {
       recursive: true,
     });
   } catch (error) {
@@ -32,12 +41,6 @@ export function createDemoWorkspace(
     personaDir,
     cleanup: () => rmSync(rootDir, { recursive: true, force: true }),
   };
-}
-
-export function loadDemoFallbackItems(projectRoot = process.cwd()): FeedItem[] {
-  const filePath = path.join(projectRoot, "examples", "demo-items.json");
-  const parsed: unknown = JSON.parse(readFileSync(filePath, "utf8"));
-  return Array.isArray(parsed) ? parsed as FeedItem[] : [];
 }
 
 export function formatDemoError(error: unknown): string {
@@ -59,7 +62,7 @@ export function formatDemoError(error: unknown): string {
     return "Gemini reached a rate or quota limit. Check the reset time at https://ai.dev/rate-limit, then run the demo again.";
   }
   if (/API.?key|PERMISSION_DENIED|401|403/iu.test(message)) {
-    return "Google rejected the API key. Check GOOGLE_API_KEY in .env and try again.";
+    return "Google rejected the API key. Check GOOGLE_API_KEY in .env, or restart the demo and enter a different key.";
   }
   return message;
 }

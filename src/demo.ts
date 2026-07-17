@@ -7,12 +7,11 @@ import { pathToFileURL } from "node:url";
 import { AgentLoop } from "./agent.js";
 import { BudgetTracker } from "./budget.js";
 import { loadConfig, resolveAgentConfig } from "./config.js";
+import { collectDemoSetup } from "./demo-setup.js";
 import { ToolExecutor } from "./executor.js";
 import {
   buildFeedDigestPrompt,
   type FeedCheckResult,
-  type FeedItem,
-  type FeedRegistryMetadata,
   loadFeedRegistryMetadata,
   loadInterests,
   loadLens,
@@ -27,32 +26,17 @@ import { renderTerminalMarkdown } from "./terminal-markdown.js";
 import {
   createDemoWorkspace,
   formatDemoError,
-  loadDemoFallbackItems,
 } from "./demo-support.js";
 
-const DEMO_AGENT_ID = "kingclawd";
+const DEMO_TEMPLATE_AGENT_ID = "kingclawd";
 const DEMO_CHANNEL_ID = "console";
 const DEMO_MAX_ITEMS = 8;
 const DEMO_MAX_TURNS = 6;
 
-function createFallbackMetadata(items: FeedItem[]): Map<string, FeedRegistryMetadata> {
-  const metadata = new Map<string, FeedRegistryMetadata>();
-  for (const item of items) {
-    const id = item.feed_id;
-    if (!id || metadata.has(id)) continue;
-    metadata.set(id, {
-      id,
-      name: item.feed_name ?? id,
-      fetchHint: "never",
-      contentQuality: "full-text",
-    });
-  }
-  return metadata;
-}
-
 async function runFollowUpLoop(
   agent: AgentLoop,
   budget: BudgetTracker,
+  personaName: string,
 ): Promise<void> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) return;
 
@@ -81,7 +65,7 @@ async function runFollowUpLoop(
     const response = await agent.chat(input, DEMO_CHANNEL_ID, {
       throwOnApiError: true,
     });
-    console.log(`\nKingClawd:\n${renderTerminalMarkdown(response.content)}`);
+    console.log(`\n${personaName}:\n${renderTerminalMarkdown(response.content)}`);
     console.log(`${budget.formatInline()}\n`);
   }
 
@@ -89,14 +73,10 @@ async function runFollowUpLoop(
 }
 
 export async function runDemo(projectRoot = process.cwd()): Promise<void> {
-  const apiKey = process.env.GOOGLE_API_KEY?.trim();
-  if (!apiKey || apiKey === "your-google-api-key") {
-    throw new Error(
-      "GOOGLE_API_KEY is required. Get a free key at https://aistudio.google.com, add it to .env, and run the demo again.",
-    );
-  }
+  console.log("NewsTeam console demo — no Discord required");
+  const setup = await collectDemoSetup(projectRoot);
 
-  const workspace = createDemoWorkspace(projectRoot);
+  const workspace = createDemoWorkspace(projectRoot, { personaId: setup.persona.id });
   const exitOnSignal = (): void => {
     workspace.cleanup();
     process.exit(130);
@@ -105,13 +85,14 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
   process.once("SIGTERM", exitOnSignal);
   try {
     const swarmConfig = loadConfig(path.join(projectRoot, "config.example.yaml"));
-    const template = swarmConfig.agents.find((agent) => agent.id === DEMO_AGENT_ID);
+    const template = swarmConfig.agents.find((agent) => agent.id === DEMO_TEMPLATE_AGENT_ID);
     if (!template?.feeds) {
-      throw new Error(`Demo agent "${DEMO_AGENT_ID}" is missing from config.example.yaml`);
+      throw new Error(`Demo template "${DEMO_TEMPLATE_AGENT_ID}" is missing from config.example.yaml`);
     }
 
     const agentConfig = {
       ...template,
+      id: setup.persona.id,
       persona_dir: workspace.personaDir,
       channel_ids: [DEMO_CHANNEL_ID],
       feeds: {
@@ -132,7 +113,7 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
     const registry = new ToolRegistry(toolsDir);
     registry.loadAll({ availableSecretsOnly: true });
     const executor = new ToolExecutor(toolsDir);
-    const budget = new BudgetTracker(config.budget, DEMO_AGENT_ID);
+    const budget = new BudgetTracker(config.budget, setup.persona.id);
     const memory = new MemoryManager(
       path.join(workspace.personaDir, "MEMORY.md"),
       config.memory.max_tokens,
@@ -141,14 +122,13 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       config,
       budget,
       memory,
-      llmClient: createGeminiClient(apiKey, config.budget.model),
+      llmClient: createGeminiClient(setup.apiKey, config.budget.model),
       registry,
       executor,
-      agentId: DEMO_AGENT_ID,
+      agentId: setup.persona.id,
     });
 
-    console.log("NewsTeam console demo — no Discord required");
-    console.log(`Persona: KingClawd  |  Model: ${config.budget.model}`);
+    console.log(`Persona: ${setup.persona.name}  |  Model: ${config.budget.model}`);
     console.log("Checking the starter feeds...");
 
     const feedsPath = path.join(workspace.personaDir, "feeds.json");
@@ -160,27 +140,19 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       scriptPath: path.join(projectRoot, "scripts", "feed-check.py"),
     });
     const liveItems = Array.isArray(checkResult?.new_items) ? checkResult.new_items : [];
-    const usingFallback = liveItems.length === 0;
-    const availableItems = usingFallback ? loadDemoFallbackItems(projectRoot) : liveItems;
-    const { selected } = selectDigestItems(availableItems, agentConfig.feeds.max_items_per_digest);
+    const { selected } = selectDigestItems(liveItems, agentConfig.feeds.max_items_per_digest);
     if (selected.length === 0) {
-      throw new Error("No live or bundled demo items were available");
+      throw new Error("No items were available from the starter feeds. Check your connection and try again.");
     }
 
-    if (usingFallback) {
-      console.log("Live feeds were unavailable, so NewsTeam is using a bundled sample.");
-    } else {
-      const feedErrors = checkResult?.errors?.length ?? 0;
-      console.log(
-        `Found ${liveItems.length} new items across ${checkResult?.feeds_checked ?? "the"} feeds` +
-        `${feedErrors > 0 ? ` (${feedErrors} feed errors)` : ""}.`,
-      );
-    }
+    const feedErrors = checkResult?.errors?.length ?? 0;
+    console.log(
+      `Found ${liveItems.length} new items across ${checkResult?.feeds_checked ?? "the"} feeds` +
+      `${feedErrors > 0 ? ` (${feedErrors} feed errors)` : ""}.`,
+    );
     console.log(`Generating a briefing from ${selected.length} items...\n`);
 
-    const metadata = usingFallback
-      ? createFallbackMetadata(selected)
-      : loadFeedRegistryMetadata(feedsPath);
+    const metadata = loadFeedRegistryMetadata(feedsPath);
     const prompt = buildFeedDigestPrompt(
       selected,
       [],
@@ -198,7 +170,7 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
 
     console.log(renderTerminalMarkdown(response.content));
     console.log(`\n${budget.formatInline()}`);
-    await runFollowUpLoop(agent, budget);
+    await runFollowUpLoop(agent, budget, setup.persona.name);
     memory.flush();
   } finally {
     process.off("SIGINT", exitOnSignal);

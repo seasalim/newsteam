@@ -14,8 +14,7 @@ COPY config.example.yaml ./
 COPY src ./src
 COPY tools ./tools
 COPY scripts ./scripts
-COPY examples/demo-items.json ./examples/demo-items.json
-COPY examples/personas/kingclawd ./examples/personas/kingclawd
+COPY examples/personas ./examples/personas
 
 RUN npm run build
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -7,11 +7,10 @@ import test from "node:test";
 import {
   createDemoWorkspace,
   formatDemoError,
-  loadDemoFallbackItems,
 } from "../src/demo-support.ts";
 
 test("createDemoWorkspace copies the public persona and cleans up runtime state", () => {
-  const workspace = createDemoWorkspace(process.cwd(), tmpdir());
+  const workspace = createDemoWorkspace(process.cwd(), { tempParent: tmpdir() });
   try {
     assert.ok(existsSync(path.join(workspace.personaDir, "IDENTITY.md")));
     assert.ok(existsSync(path.join(workspace.personaDir, "feeds.json")));
@@ -25,15 +24,16 @@ test("createDemoWorkspace copies the public persona and cleans up runtime state"
   assert.equal(existsSync(workspace.rootDir), false);
 });
 
-test("loadDemoFallbackItems returns source-linked bundled items", () => {
-  const items = loadDemoFallbackItems(process.cwd());
-
-  assert.ok(items.length >= 3);
-  for (const item of items) {
-    assert.ok(item.feed_id);
-    assert.ok(item.title);
-    assert.match(item.url ?? "", /^https:\/\//u);
-    assert.ok(item.snippet);
+test("createDemoWorkspace copies a selected public persona", () => {
+  const workspace = createDemoWorkspace(process.cwd(), {
+    personaId: "the-analyst",
+    tempParent: tmpdir(),
+  });
+  try {
+    const identityPath = path.join(workspace.personaDir, "IDENTITY.md");
+    assert.match(readFileSync(identityPath, "utf8"), /\*\*Name:\*\* The Analyst/u);
+  } finally {
+    workspace.cleanup();
   }
 });
 
@@ -57,6 +57,6 @@ test("formatDemoError gives actionable Google API guidance", () => {
     formatDemoError(new Error("429 RESOURCE_EXHAUSTED")),
     /https:\/\/ai\.dev\/rate-limit/u,
   );
-  assert.match(formatDemoError(new Error("403 API key invalid")), /GOOGLE_API_KEY/u);
+  assert.match(formatDemoError(new Error("403 API key invalid")), /enter a different key/u);
   assert.equal(formatDemoError(new Error("Feed parser failed")), "Feed parser failed");
 });
