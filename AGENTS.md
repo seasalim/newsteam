@@ -2,21 +2,26 @@
 
 > Your personal news team. No subscription. Start for $0.
 
-NewsTeam is a self-hosted local-browser/Discord harness for personality-driven AI news
-analysts. One TypeScript process runs a multi-agent swarm, deterministic RSS
-detection, scheduled LLM digests, source evaluation, weekly synthesis, hard
-budgets, memory, tools, local chat, and a dashboard.
+NewsTeam is a self-hosted local-browser/Discord harness for personality-driven
+AI news analysts. One TypeScript process runs a multi-agent swarm,
+deterministic RSS detection, scheduled LLM digests, source evaluation, weekly
+synthesis, hard budgets, memory, tools, local chat, and a dashboard.
 
 ## Build and run
 
 ```bash
 cp .env.example .env
 cp config.example.yaml config.yaml
+mkdir -p persona
 cp -r examples/personas/kingclawd persona/kingclawd
+cp -r examples/personas/the-analyst persona/the-analyst
 npm ci
 npm run build
 npm start
 ```
+
+The example config defaults to local chat at `http://127.0.0.1:7777/chat`;
+Mission Control is at `/`. Add the configured model API key before starting.
 
 Verification commands:
 
@@ -38,8 +43,8 @@ Linux systemd, macOS launchd, Docker, and Windows/WSL guidance lives in
 
 ## Project layout
 
-- `src/` — TypeScript agent loop, channel adapters, feeds, providers, budget,
-  memory, dashboard, and tool execution
+- `src/` — agent loop, channel adapters, feeds, providers, budget, memory,
+  dashboard, and tool execution
 - `tools/` — capability-limited handlers discovered through JSON manifests
 - `scripts/feed-check.py` — standard-library RSS/Atom detection
 - `examples/personas/` — public starter identities, interests, lenses, and feeds
@@ -53,16 +58,40 @@ Linux systemd, macOS launchd, Docker, and Windows/WSL guidance lives in
 
 ## Architecture
 
-### Multi-agent swarm
+### Agents and channels
 
 Each `agents` entry has its own persona directory, channel IDs, feed
 configuration, budget, conversation window, and memory. `resolveAgentConfig()`
 merges per-agent overrides with `defaults`. Channel IDs must not overlap.
 
-`AgentManager` creates one `AgentLoop` per agent. Per-agent `JobQueue` instances
-serialize chat and feed work, prioritizing user messages. The Discord adapter
-is auth-gated to one configured user; the local adapter is loopback-only by
-default and supports an optional shared token. Both validate configured channels.
+`AgentManager` creates one `AgentLoop` and `JobQueue` per agent; jobs serialize
+with user work ahead of feeds. One provider runs per deployment. Keep the
+`ChannelAdapter` seam transport-neutral: it owns lifecycle, delivery, and
+confirmation; `ChannelCallbacks` owns commands/chat; `channel-session.ts` owns
+one in-flight turn, one queued message, busy/rate-limit behavior.
+
+The example config selects `local`; omitted `channel` remains a Discord
+compatibility fallback. Discord requires `discord.allowed_user_id` and
+`DISCORD_TOKEN`; local uses slugs and ignores both. Keep chat/feed channel IDs
+unique across agents and synchronize provider changes across the example env,
+config, tests, and deployment docs.
+
+Local chat mounts on the dashboard's existing `node:http` server and uses SSE,
+JSONL display transcripts under `persona/<agent>/local_channel/`, and the same
+callbacks as Discord. The transcript is not the in-memory conversation window.
+See `docs/LOCAL_CHANNEL_DESIGN.md` for routes and persistence details.
+
+Local security defaults to loopback. `LOCAL_CHANNEL_TOKEN` protects chat and
+dashboard routes; non-loopback binding without it must warn. Keep POSTs
+same-origin JSON, validate channels, retain CSP, avoid permissive CORS, and deny
+pending confirmations on timeout/shutdown. Remote use requires TLS plus token.
+
+Browser pages stay self-contained and escape model HTML before rendering the
+Markdown subset. Preserve the chat scroll-container constraints and keep
+Mission Control actions in normal responsive flow, not fixed/floating.
+
+`npm run demo` performs terminal onboarding, then runs the same local UI from a
+temporary workspace and cleans it on Ctrl-C. There is no console chat REPL.
 
 ### Model providers and budgets
 
@@ -117,7 +146,7 @@ Active files under `persona/<agent>/` are private:
 - `MEMORY.md` — bounded agent-managed memory
 - `feeds.json` — RSS registry with `fetch_hint` and `content_quality`
 - feed state, pending queue, context, archive, quality, and source-review files
-- `local_channel/*.jsonl` display transcripts when the local provider is active
+- `local_channel/*.jsonl` — display transcripts when the local provider is active
 
 Never read, copy, or commit private persona files when preparing public
 examples. Write examples from scratch under `examples/personas/`.
@@ -145,6 +174,8 @@ the enforced schema subset.
 - Commit messages use `feat:`, `fix:`, or `chore:` prefixes.
 - Use `config.example.yaml` for public configuration changes; never commit
   `config.yaml`, `.env`, logs, or active `persona/` content.
+- Keep browser pages self-contained and dependency-free; local-channel work
+  must not add npm packages without a separate explicit design decision.
 - Tools are capability-limited handlers with JSON manifests, not arbitrary
   subprocess or shell access.
 - Preserve the single-user channel auth gate unless a change explicitly
@@ -157,6 +188,11 @@ require both the TypeScript suite and the two Python suites. Deployment changes
 should validate YAML/plist/shell syntax as applicable; Docker changes should run
 `docker build -t newsteam .` when Docker is available and explicitly report
 when it is not.
+
+Channel/config/UI changes should normally run the focused suites in
+`tests/bot.test.ts`, `channel-session.test.ts`, `config.test.ts`,
+`local-channel.test.ts`, `local-transcript.test.ts`, and
+`web-markdown.test.ts`, followed by `npm test` for cross-system regressions.
 
 `DigestMetrics`, `DigestQualityEvaluation`, and `SynthesisMetrics` are part of
 observability behavior; update their tests and consumers when changing emitted
