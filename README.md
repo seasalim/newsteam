@@ -10,6 +10,10 @@ Each analyst has a distinct personality and point of view, so the result feels l
 
 **Free to start · Self-hosted · Hard spending caps · Open source**
 
+![NewsTeam local browser chat showing a KingClawd news digest](docs/images/local-chat.png)
+
+*Local browser chat—no Discord account required.*
+
 ## Start for $0
 
 The recommended setup uses the Gemini free tier and does not require a billing account.
