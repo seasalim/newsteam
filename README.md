@@ -27,7 +27,6 @@ The console demo lets you choose from six analyst personas, generates a real bri
 ```bash
 git clone https://github.com/seasalim/newsteam.git
 cd newsteam
-cp .env.example .env
 docker compose run --build --rm demo
 ```
 
@@ -57,6 +56,7 @@ NewsTeam is roughly 8,000 lines of code, has minimal dependencies, uses no agent
 Once you like the demo, connect NewsTeam to Discord for scheduled briefings and chat. You will need Docker, a Discord bot token, and the same free [Google AI Studio](https://aistudio.google.com) API key.
 
 ```bash
+cp .env.example .env
 cp config.example.yaml config.yaml
 mkdir -p persona logs
 cp -r examples/personas/kingclawd persona/kingclawd
