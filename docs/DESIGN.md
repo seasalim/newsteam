@@ -1,16 +1,16 @@
 # NewsTeam Design
 
-NewsTeam is a self-hosted Discord bot harness for running personality-driven AI
+NewsTeam is a self-hosted local-browser/Discord harness for personality-driven AI
 news analysts. It is intentionally small: one Node.js process coordinates
-Discord, model providers, feeds, tools, budgets, memory, and a local dashboard.
+channel delivery, model providers, feeds, tools, budgets, memory, and a dashboard.
 
 ## System overview
 
 ```text
-Discord
+Local chat or Discord
    │
    ▼
-Bot adapter ──► per-agent job queue ──► AgentLoop ──► Anthropic, Gemini, or OpenAI
+Channel adapter ──► per-agent job queue ──► AgentLoop ──► Anthropic, Gemini, or OpenAI
                                            │
                                            ├──► budget + cost ledger
                                            ├──► bounded memory
@@ -18,11 +18,12 @@ Bot adapter ──► per-agent job queue ──► AgentLoop ──► Anthropi
                                                      │
                                                      └──► Python/Node handlers
 
-Heartbeat ──► feed detection ──► pending queue ──► digest narration ──► Discord
+Heartbeat ──► feed detection ──► pending queue ──► digest narration ──► channel
 ```
 
-The bot is authenticated to one configured Discord user and a fixed set of
-channels. Multiple analysts share the process but keep separate personas,
+The local provider is loopback-only by default and supports an optional shared
+token; Discord is authenticated to one configured user. Both use a fixed set
+of channels. Multiple analysts share the process but keep separate personas,
 conversation windows, budgets, feeds, and runtime artifacts.
 
 ## Runtime configuration
@@ -38,12 +39,14 @@ settings. Each entry under `agents` supplies:
 
 - a unique `id`
 - a private `persona_dir`
-- one or more Discord `channel_ids`
+- one or more provider-specific `channel_ids`
 - optional budget overrides
 - optional feed scheduling and delivery settings
 - optional environment-variable aliases
 - optional channel-specific persona overlays
 
+The public template selects local browser chat; set `channel.provider` to
+`discord` and configure its user/channel IDs to use Discord instead.
 `resolveAgentConfig()` merges agent overrides with defaults and validates the
 resolved result. Chat and digest models for one agent must use the same
 provider. Channel IDs cannot be assigned to more than one agent.
@@ -55,7 +58,7 @@ needed only by `web_search`.
 
 ## Agent lifecycle
 
-`AgentManager` creates one `AgentLoop` per configured agent. Incoming Discord
+`AgentManager` creates one `AgentLoop` per configured agent. Incoming channel
 messages are mapped to an agent by channel ID and queued so one agent never
 runs two conversations or feed jobs concurrently. User work takes priority
 over scheduled feed work.

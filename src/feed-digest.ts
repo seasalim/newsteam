@@ -137,7 +137,6 @@ export function buildFeedDigestPrompt(
   interests?: string,
   lens?: string,
   feedMetadata?: ReadonlyMap<string, FeedRegistryMetadata>,
-  options?: { deliveryTarget?: "discord" | "console" },
 ): string {
   const sections = items.map((item) => {
     const lines = [
@@ -167,17 +166,13 @@ export function buildFeedDigestPrompt(
   const lensSection = buildLensSection(lens ?? "");
   const fetchGuidanceSection = buildFetchGuidanceSection(items, feedMetadata);
   const largeDigestFetchSection = buildLargeDigestFetchSection(items, feedMetadata);
-  const deliveryInstruction = options?.deliveryTarget === "console"
-    ? "Your reply will be printed DIRECTLY in a terminal as-is. Every word you write will be seen by the user."
-    : "Your reply will be posted DIRECTLY to the Discord channel as-is. Every word you write will be seen by the audience.";
+  const deliveryInstruction = "Your reply will be delivered DIRECTLY to the news channel as-is. Every word you write will be seen by the audience.";
 
   const defaultStyle = [
     "## Style guidelines",
     "- Group related items thematically — connect threads, note trends, surface patterns.",
     "- Have opinions. Don't just summarize — react, contextualize, predict.",
-    options?.deliveryTarget === "console"
-      ? "- Use short, readable paragraphs that work well in a terminal."
-      : "- Multiple paragraphs are fine — Discord will handle splitting.",
+    "- Use readable Markdown and concise paragraphs that work well in chat.",
     "- It's OK to skip low-value items entirely. Curation > completeness.",
   ];
 

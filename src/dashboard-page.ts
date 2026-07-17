@@ -79,11 +79,18 @@ export const HTML_PAGE = `<!DOCTYPE html>
     color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer;
   }
   .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .chat-link {
+    position: fixed; top: 16px; right: 72px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+    color: var(--muted); font-family: inherit; font-size: 12px; text-decoration: none;
+  }
+  .chat-link:hover { color: var(--accent); border-color: var(--accent); }
   @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
+<!--LOCAL_CHAT_LINK-->
 <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode"></button>
 <h1>NewsTeam — Mission Control</h1>
 <div class="subtitle">localhost dashboard — auto-refreshes every 30s</div>

@@ -47,13 +47,52 @@ test("loadConfig loads the example config (swarm format)", () => {
   assert.equal(config.defaults.budget.max_output_tokens, 6000);
   assert.equal(config.defaults.budget.context_summary_max_tokens, 500);
   assert.equal(config.defaults.budget.max_turns, 12);
-  assert.equal(typeof config.discord.allowed_user_id, "string");
+  assert.equal(config.channel.provider, "local");
+  assert.equal(config.discord, undefined);
   assert.equal(config.defaults.conversation.window_size, 10);
   assert.equal(config.tools_dir, "tools");
   assert.equal(config.defaults.memory.max_tokens, 3000);
   assert.ok(Array.isArray(config.agents));
   assert.ok(config.agents.length > 0);
   assert.equal(config.agents[0]!.id, "kingclawd");
+  assert.deepEqual(config.agents[0]!.channel_ids, ["kingclawd-chat"]);
+  assert.equal(config.agents[0]!.feeds?.channel_id, "kingclawd-feed");
+});
+
+test("channel provider defaults to Discord and still requires Discord config", () => {
+  const configPath = writeTempConfig(MINIMAL_SWARM.replace(
+    /discord:\n  allowed_user_id: "123"\n/u,
+    "",
+  ));
+
+  assert.throws(() => loadConfig(configPath), {
+    message: "config.discord is required and must be an object",
+  });
+});
+
+test("local channel provider does not require Discord config", () => {
+  const configPath = writeTempConfig(
+    MINIMAL_SWARM
+      .replace(
+        /discord:\n  allowed_user_id: "123"\n/u,
+        "channel:\n  provider: local\n",
+      )
+      .replace('      - "456"', "      - test-agent-chat"),
+  );
+
+  const config = loadConfig(configPath);
+  assert.equal(config.channel.provider, "local");
+  assert.equal(config.discord, undefined);
+  const resolved = resolveAgentConfig(config.agents[0]!, config);
+  assert.equal(resolved.discord.allowed_user_id, undefined);
+  assert.deepEqual(resolved.discord.allowed_channel_ids, ["test-agent-chat"]);
+});
+
+test("channel provider rejects unknown values", () => {
+  const configPath = writeTempConfig(`channel:\n  provider: carrier-pigeon\n${MINIMAL_SWARM}`);
+  assert.throws(() => loadConfig(configPath), {
+    message: "config.channel.provider must be one of: discord, local",
+  });
 });
 
 test("loadConfig gives setup guidance when config.yaml is missing", () => {
@@ -917,6 +956,45 @@ agents:
 
   assert.throws(() => loadConfig(configPath), {
     message: 'Channel "222" is assigned to both agents "agent-a" and "agent-b"',
+  });
+});
+
+test("loadConfig rejects feed channel overlap across agents", () => {
+  const configPath = writeTempConfig(`
+defaults:
+  budget:
+    model: anthropic/claude-haiku-4-5
+    max_input_tokens: 8000
+    max_output_tokens: 2000
+    max_turns: 5
+    max_session_cost_cents: 50
+    context_strategy: truncate
+  conversation:
+    window_size: 10
+    rate_limit_ms: 1000
+  memory:
+    max_tokens: 1500
+channel:
+  provider: local
+tools_dir: tools
+agents:
+  - id: agent-a
+    persona_dir: persona/a
+    channel_ids: [a-chat]
+    feeds:
+      enabled: true
+      check_interval_minutes: 15
+      waking_hours_start: 7
+      waking_hours_end: 22
+      channel_id: shared-feed
+      max_items_per_digest: 10
+  - id: agent-b
+    persona_dir: persona/b
+    channel_ids: [shared-feed]
+`);
+
+  assert.throws(() => loadConfig(configPath), {
+    message: 'Channel "shared-feed" is assigned to both agents "agent-a" and "agent-b"',
   });
 });
 

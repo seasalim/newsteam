@@ -3,6 +3,26 @@ import path from "node:path";
 import yaml from "js-yaml";
 
 import type { ThinkingLevel } from "./llm-types.ts";
+import type {
+  AgentConfig,
+  BudgetConfig,
+  ConversationConfig,
+  FeedsConfig,
+  MemoryConfig,
+  NewsteamConfig,
+  SwarmConfig,
+} from "./config-types.ts";
+export type {
+  AgentConfig,
+  BudgetConfig,
+  ChannelProvider,
+  ConversationConfig,
+  DiscordConfig,
+  FeedsConfig,
+  MemoryConfig,
+  NewsteamConfig,
+  SwarmConfig,
+} from "./config-types.ts";
 import {
   isConfigObject,
   requireBoolean,
@@ -17,87 +37,7 @@ import {
 } from "./config-validators.ts";
 import { validateMatchingModelProviders } from "./model.ts";
 import { isKnownCostModel } from "./model-cost.ts";
-
-export interface BudgetConfig {
-  model: string;
-  digest_model?: string;
-  thinking_level?: ThinkingLevel;
-  digest_thinking_level?: ThinkingLevel;
-  max_input_tokens: number;
-  max_output_tokens: number;
-  context_summary_max_tokens: number;
-  max_turns: number;
-  max_session_cost_cents: number;
-  context_strategy: string;
-  monthly_budget_cents?: number;
-}
-
-export interface DiscordConfig {
-  allowed_user_id: string;
-  allowed_channel_ids: string[];
-}
-
-export interface ConversationConfig {
-  window_size: number;
-  rate_limit_ms: number;
-  idle_timeout_minutes?: number;
-}
-
-export interface MemoryConfig {
-  max_tokens: number;
-}
-
-export interface FeedsConfig {
-  enabled: boolean;
-  check_interval_minutes: number;
-  waking_hours_start: number;
-  waking_hours_end: number;
-  channel_id: string;
-  max_items_per_digest: number;
-  max_queue_age_hours?: number;
-  max_content_age_hours?: number;
-  digest_times?: string[];
-  digest_max_turns?: number;
-  synthesis_day?: number;   // 0=Sunday .. 6=Saturday
-  synthesis_time?: string;  // HH:MM in 24h format
-}
-
-/** Per-agent resolved config — passed to AgentLoop and other per-agent components. */
-export interface NewsteamConfig {
-  budget: BudgetConfig;
-  discord: DiscordConfig;
-  conversation: ConversationConfig;
-  persona_dir: string;
-  tools_dir: string;
-  memory: MemoryConfig;
-  feeds?: FeedsConfig;
-  confirmation_timeout_ms?: number;
-  channel_personas?: Record<string, string>;
-}
-
-/** Per-agent entry as written in config.yaml. */
-export interface AgentConfig {
-  id: string;
-  persona_dir: string;
-  channel_ids: string[];
-  budget?: Partial<BudgetConfig>;
-  env?: Record<string, string>;
-  feeds?: FeedsConfig;
-  channel_personas?: Record<string, string>;
-}
-
-/** Top-level swarm config returned by loadConfig(). */
-export interface SwarmConfig {
-  discord: { allowed_user_id: string };
-  defaults: {
-    budget: BudgetConfig;
-    conversation: ConversationConfig;
-    memory: MemoryConfig;
-  };
-  tools_dir: string;
-  confirmation_timeout_ms: number;
-  agents: AgentConfig[];
-}
+import { validateChannelSelection } from "./channel-config.ts";
 
 /** Resolve an AgentConfig + SwarmConfig defaults into a fully populated NewsteamConfig. */
 export function resolveAgentConfig(agent: AgentConfig, swarm: SwarmConfig): NewsteamConfig {
@@ -119,7 +59,7 @@ export function resolveAgentConfig(agent: AgentConfig, swarm: SwarmConfig): News
   return {
     budget,
     discord: {
-      allowed_user_id: swarm.discord.allowed_user_id,
+      allowed_user_id: swarm.discord?.allowed_user_id,
       allowed_channel_ids: agent.channel_ids,
     },
     conversation: swarm.defaults.conversation,
@@ -283,14 +223,6 @@ function validateBudgetOverride(value: unknown, prefix: string): Partial<BudgetC
 }
 
 
-function validateDiscordConfig(value: unknown): { allowed_user_id: string } {
-  const discord = requireObject(value, "config.discord");
-
-  return {
-    allowed_user_id: requireString(discord.allowed_user_id, "config.discord.allowed_user_id"),
-  };
-}
-
 function validateConversationConfig(value: unknown, prefix = "config.defaults.conversation"): ConversationConfig {
   const conversation = requireObject(value, prefix);
 
@@ -412,7 +344,7 @@ function validateAgentConfig(value: unknown, index: number): AgentConfig {
 
 function validateSwarmConfig(config: ConfigObject): SwarmConfig {
   const defaults = requireObject(config.defaults, "config.defaults");
-  const discord = validateDiscordConfig(config.discord);
+  const { channel, discord } = validateChannelSelection(config.channel, config.discord);
   const tools_dir = requireString(config.tools_dir ?? (defaults as ConfigObject).tools_dir, "config.tools_dir");
 
   const budgetConfig = validateBudgetConfig(defaults.budget, "config.defaults.budget");
@@ -437,7 +369,9 @@ function validateSwarmConfig(config: ConfigObject): SwarmConfig {
   // Validate no overlapping channel IDs
   const channelOwners = new Map<string, string>();
   for (const agent of agents) {
-    for (const ch of agent.channel_ids) {
+    const ownedChannels = new Set(agent.channel_ids);
+    if (agent.feeds?.channel_id) ownedChannels.add(agent.feeds.channel_id);
+    for (const ch of ownedChannels) {
       const existing = channelOwners.get(ch);
       if (existing) {
         throw new Error(`Channel "${ch}" is assigned to both agents "${existing}" and "${agent.id}"`);
@@ -470,6 +404,7 @@ function validateSwarmConfig(config: ConfigObject): SwarmConfig {
     : 120_000;
 
   return {
+    channel,
     discord,
     defaults: {
       budget: budgetConfig,

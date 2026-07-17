@@ -23,21 +23,33 @@ cp config.example.yaml config.yaml
 mkdir -p persona logs
 cp -r examples/personas/kingclawd persona/kingclawd
 
-# Fill in .env, config.yaml, and the Discord channel/user IDs.
+# Add the configured model API key to .env. The template defaults to local chat.
+# For Discord, change channel.provider and fill in its channel/user IDs.
 docker compose up -d --build
 docker compose logs -f newsteam
 docker compose ps
 ```
 
-Confirm Discord authentication succeeds, the configured example persona is
-available, and the dashboard responds at
-[http://127.0.0.1:7777](http://127.0.0.1:7777).
+Confirm the configured example persona is available. The dashboard responds at
+[http://127.0.0.1:7777](http://127.0.0.1:7777), and local chat responds at
+[http://127.0.0.1:7777/chat](http://127.0.0.1:7777/chat) when selected.
 The Compose file binds it to localhost only. Stop the service with
 `docker compose down`; update it with `docker compose up -d --build`. To build
 the image directly, run `docker build -t newsteam .`.
 
+### Local-channel security
+
+The default `127.0.0.1` binding is the local channel's security boundary and
+requires no token. If `LOCAL_CHANNEL_TOKEN` is set, all chat and dashboard
+requests require `Authorization: Bearer <token>` or an initial visit to
+`/chat?token=<token>`, which stores an HTTP-only cookie and redirects to the
+clean URL. A non-loopback `DASHBOARD_HOST` without a token emits a prominent
+startup warning. Use a TLS reverse proxy plus `LOCAL_CHANNEL_TOKEN` whenever
+exposing the service beyond the host machine; permissive CORS is not enabled.
+
 **Windows** is supported via Docker Desktop or WSL2 (run the Linux
-instructions inside WSL); native Windows is not supported because tool
+instructions inside WSL). WSL usually cannot auto-open the demo browser, so
+use the printed local-chat URL. Native Windows is not supported because tool
 execution spawns `python3` subprocesses. Native Windows support belongs on the
 roadmap only if users ask.
 
@@ -58,7 +70,7 @@ Save this unit as `/etc/systemd/system/newsteam.service`:
 
 ```ini
 [Unit]
-Description=NewsTeam Discord news team
+Description=NewsTeam self-hosted news team
 After=network-online.target
 Wants=network-online.target
 

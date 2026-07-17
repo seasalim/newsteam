@@ -139,7 +139,7 @@ export function buildWeeklySynthesisPrompt(
     "# Weekly Synthesis",
     "",
     `You are reviewing your last **${archive.length} digests** to produce a weekly meta-analysis.`,
-    "Your reply will be posted DIRECTLY to the Discord channel as-is. Every word you write will be seen by the audience.",
+    "Your reply will be delivered DIRECTLY to the news channel as-is. Every word you write will be seen by the audience.",
     "Do NOT include any preamble, thinking out loud, or meta-commentary. Open with a persona-appropriate intro, then go straight into the analysis.",
     "",
     ...(lensSection ? [lensSection] : []),

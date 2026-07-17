@@ -1,7 +1,8 @@
 import "dotenv/config";
 
+import { execFile } from "node:child_process";
+import type http from "node:http";
 import path from "node:path";
-import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 
 import { AgentLoop } from "./agent.js";
@@ -22,67 +23,53 @@ import { MemoryManager } from "./memory.js";
 import { getModelProvider } from "./model.js";
 import { createGeminiClient } from "./provider-gemini.js";
 import { ToolRegistry } from "./registry.js";
-import { renderTerminalMarkdown } from "./terminal-markdown.js";
+import { createLocalChannelAdapter, type LocalChannelAdapter } from "./local-channel.js";
+import { LOCAL_CHANNEL_PAGE } from "./local-channel-page.js";
+import { startChatServer } from "./dashboard.js";
 import {
   createDemoWorkspace,
   formatDemoError,
 } from "./demo-support.js";
 
 const DEMO_TEMPLATE_AGENT_ID = "kingclawd";
-const DEMO_CHANNEL_ID = "console";
+const DEMO_CHANNEL_ID = "demo";
 const DEMO_MAX_ITEMS = 8;
 const DEMO_MAX_TURNS = 6;
 
-async function runFollowUpLoop(
-  agent: AgentLoop,
-  budget: BudgetTracker,
-  personaName: string,
-): Promise<void> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return;
+function openBrowser(url: string): void {
+  const command = process.platform === "darwin"
+    ? { file: "open", args: [url] }
+    : process.platform === "win32"
+      ? { file: "cmd", args: ["/c", "start", "", url] }
+      : { file: "xdg-open", args: [url] };
+  execFile(command.file, command.args, () => {});
+}
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  let closed = false;
-  rl.on("SIGINT", () => {
-    closed = true;
-    rl.close();
+async function waitForListening(server: http.Server): Promise<void> {
+  if (server.listening) return;
+  await new Promise<void>((resolve, reject) => {
+    server.once("listening", resolve);
+    server.once("error", reject);
   });
+}
 
-  console.log("\nAsk a follow-up, type /cost, or type /quit.");
-  while (!closed) {
-    let input: string;
-    try {
-      input = (await rl.question("You: ")).trim();
-    } catch {
-      break;
-    }
-    if (!input) continue;
-    if (input === "/quit" || input === "/exit") break;
-    if (input === "/cost") {
-      console.log(`\n${budget.formatStats()}\n`);
-      continue;
-    }
-
-    const response = await agent.chat(input, DEMO_CHANNEL_ID, {
-      throwOnApiError: true,
-    });
-    console.log(`\n${personaName}:\n${renderTerminalMarkdown(response.content)}`);
-    console.log(`${budget.formatInline()}\n`);
-  }
-
-  rl.close();
+async function closeServer(server: http.Server): Promise<void> {
+  if (!server.listening) return;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
 }
 
 export async function runDemo(projectRoot = process.cwd()): Promise<void> {
-  console.log("NewsTeam console demo — no Discord required");
+  console.log("NewsTeam local demo — no Discord required");
   const setup = await collectDemoSetup(projectRoot);
 
   const workspace = createDemoWorkspace(projectRoot, { personaId: setup.persona.id });
-  const exitOnSignal = (): void => {
-    workspace.cleanup();
-    process.exit(130);
-  };
+  let requestShutdown!: () => void;
+  const shutdownRequested = new Promise<void>((resolve) => { requestShutdown = resolve; });
+  const exitOnSignal = (): void => requestShutdown();
   process.once("SIGINT", exitOnSignal);
   process.once("SIGTERM", exitOnSignal);
+  let adapter: LocalChannelAdapter | undefined;
+  let server: http.Server | undefined;
   try {
     const swarmConfig = loadConfig(path.join(projectRoot, "config.example.yaml"));
     const template = swarmConfig.agents.find((agent) => agent.id === DEMO_TEMPLATE_AGENT_ID);
@@ -106,7 +93,7 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
     };
     const config = resolveAgentConfig(agentConfig, swarmConfig);
     if (getModelProvider(config.budget.model) !== "google") {
-      throw new Error("The console demo requires a Google model in config.example.yaml");
+      throw new Error("The local demo requires a Google model in config.example.yaml");
     }
 
     const toolsDir = path.resolve(projectRoot, config.tools_dir);
@@ -126,7 +113,50 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       registry,
       executor,
       agentId: setup.persona.id,
+      confirmFn: async (toolName, args, channelId) => {
+        const preview = `**Tool:** \`${toolName}\`\n${Object.entries(args).map(([key, value]) => `**${key}:** ${String(value).slice(0, 200)}`).join("\n")}`;
+        return adapter?.requestConfirmation(channelId, preview, 120_000) ?? false;
+      },
     });
+
+    adapter = createLocalChannelAdapter({
+      channels: [{
+        channel_id: DEMO_CHANNEL_ID,
+        agent_id: setup.persona.id,
+        is_feed_channel: true,
+        persona_dir: workspace.personaDir,
+      }],
+      rateLimitMs: config.conversation.rate_limit_ms,
+      pageHtml: LOCAL_CHANNEL_PAGE,
+      onMessage: async (message, channelId) => {
+        const result = await agent.chat(message, channelId, { throwOnApiError: true });
+        memory.flush();
+        return `${result.content}\n───\n${budget.formatInline()}`;
+      },
+      onStats: () => budget.formatStats(),
+      onClear: () => {
+        agent.clearWindow();
+        budget.reset();
+        return `Conversation cleared for ${setup.persona.name}.`;
+      },
+      onCost: () => budget.formatStats(),
+      onHealth: () => "Demo is running locally.",
+    });
+    await adapter.start();
+    const demoHost = process.env.DASHBOARD_HOST ?? "127.0.0.1";
+    const demoToken = process.env.LOCAL_CHANNEL_TOKEN?.trim() || undefined;
+    if (!["127.0.0.1", "::1", "localhost"].includes(demoHost) && !demoToken) {
+      console.warn("WARNING: local demo is bound to a non-loopback host without LOCAL_CHANNEL_TOKEN");
+    }
+    server = startChatServer([adapter.handleRequest], {
+      host: demoHost,
+      port: 7777,
+      token: demoToken,
+    });
+    await waitForListening(server);
+    const demoUrl = `http://127.0.0.1:7777/chat${demoToken ? `?token=${encodeURIComponent(demoToken)}` : ""}`;
+    console.log(`Demo running — open ${demoUrl}`);
+    openBrowser(demoUrl);
 
     console.log(`Persona: ${setup.persona.name}  |  Model: ${config.budget.model}`);
     console.log("Checking the starter feeds...");
@@ -159,7 +189,6 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       loadInterests(path.join(workspace.personaDir, "INTERESTS.md")),
       loadLens(path.join(workspace.personaDir, "LENS.md")),
       metadata,
-      { deliveryTarget: "console" },
     );
     const response = await agent.chat(prompt, DEMO_CHANNEL_ID, {
       maxTurns: Math.min(config.feeds?.digest_max_turns ?? DEMO_MAX_TURNS, DEMO_MAX_TURNS),
@@ -168,13 +197,18 @@ export async function runDemo(projectRoot = process.cwd()): Promise<void> {
       throwOnApiError: true,
     });
 
-    console.log(renderTerminalMarkdown(response.content));
-    console.log(`\n${budget.formatInline()}`);
-    await runFollowUpLoop(agent, budget, setup.persona.name);
+    await adapter.sendToChannel(
+      DEMO_CHANNEL_ID,
+      `${response.content}\n───\n${budget.formatInline()}`,
+    );
+    console.log("Briefing ready in local chat. Press Ctrl-C to stop the demo.");
+    await shutdownRequested;
     memory.flush();
   } finally {
     process.off("SIGINT", exitOnSignal);
     process.off("SIGTERM", exitOnSignal);
+    if (adapter) await adapter.stop();
+    if (server) await closeServer(server);
     workspace.cleanup();
   }
 }

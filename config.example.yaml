@@ -20,9 +20,13 @@ defaults:
   memory:
     max_tokens: 3000
 
-discord:
-  # Enable Discord Developer Mode, then copy your user ID.
-  allowed_user_id: "YOUR_DISCORD_USER_ID"
+# Browser chat is the default in this template. Open http://127.0.0.1:7777/chat.
+channel:
+  provider: local
+
+# To use Discord instead, change provider to discord and uncomment this block:
+# discord:
+#   allowed_user_id: "YOUR_DISCORD_USER_ID"
 
 tools_dir: tools
 
@@ -30,13 +34,13 @@ agents:
   - id: kingclawd
     persona_dir: persona/kingclawd
     # Channels assigned to one agent cannot overlap another agent.
-    channel_ids: ["YOUR_CHANNEL_ID"]
+    channel_ids: ["kingclawd-chat"]
     feeds:
       enabled: true
       check_interval_minutes: 15
       waking_hours_start: 7
       waking_hours_end: 22
-      channel_id: "YOUR_FEED_CHANNEL_ID"
+      channel_id: "kingclawd-feed"
       max_items_per_digest: 20
       max_queue_age_hours: 12
       digest_max_turns: 12
@@ -51,9 +55,9 @@ agents:
 
   - id: the-analyst
     persona_dir: persona/the-analyst
-    channel_ids: ["YOUR_ANALYST_CHANNEL_ID"]
+    channel_ids: ["the-analyst-chat"]
     # Copy the feeds block above if this agent should receive scheduled
-    # digests. Its feeds.channel_id should be YOUR_ANALYST_FEED_CHANNEL_ID.
+    # digests. Its feeds.channel_id could be "the-analyst-feed".
     # IMPORTANT: stagger digest_times across agents (e.g. 08:30/13:30/18:30
     # here vs kingclawd's 08:00/13:00/18:00). Agents that share a digest time
     # deliver concurrently, which can exceed per-minute rate limits on free

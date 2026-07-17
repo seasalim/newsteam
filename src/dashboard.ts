@@ -19,7 +19,20 @@ export interface DashboardDeps {
 }
 
 const DASHBOARD_PORT = 7777;
-const DASHBOARD_HOST = process.env.DASHBOARD_HOST ?? "127.0.0.1";
+
+export type HttpRouteHandler = (
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  url: URL,
+) => boolean | Promise<boolean>;
+
+export interface DashboardServerOptions {
+  routeHandlers?: HttpRouteHandler[];
+  token?: string;
+  host?: string;
+  port?: number;
+  chatOnly?: boolean;
+}
 
 function readJsonFile(filePath: string): unknown {
   try {
@@ -231,9 +244,12 @@ const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
 <text x="16" y="24" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="bold" font-size="22" fill="#0d1117">A</text>
 </svg>`;
 
-function serveHtml(res: http.ServerResponse): void {
+function serveHtml(res: http.ServerResponse, localChatEnabled: boolean): void {
   res.writeHead(200, { "Content-Type": "text/html" });
-  res.end(HTML_PAGE);
+  const chatLink = localChatEnabled
+    ? '<a class="chat-link" href="/chat">Local Chat</a>'
+    : "";
+  res.end(HTML_PAGE.replace("<!--LOCAL_CHAT_LINK-->", chatLink));
 }
 
 function serveFavicon(res: http.ServerResponse): void {
@@ -244,18 +260,80 @@ function serveFavicon(res: http.ServerResponse): void {
   res.end(FAVICON_SVG);
 }
 
-export function startDashboard(deps: DashboardDeps): http.Server {
+function requestHasToken(req: http.IncomingMessage, token: string): boolean {
+  if (req.headers.authorization === `Bearer ${token}`) return true;
+  const cookies = (req.headers.cookie ?? "").split(";");
+  return cookies.some((cookie) => {
+    const [name, ...valueParts] = cookie.trim().split("=");
+    if (name !== "newsteam_token") return false;
+    try {
+      return decodeURIComponent(valueParts.join("=")) === token;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function authorizeRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  url: URL,
+  token: string | undefined,
+): boolean {
+  if (!token) return true;
+
+  if (url.pathname === "/chat" && url.searchParams.get("token") === token) {
+    res.writeHead(302, {
+      Location: "/chat",
+      "Set-Cookie": `newsteam_token=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/`,
+      "Cache-Control": "no-store",
+    });
+    res.end();
+    return false;
+  }
+
+  if (requestHasToken(req, token)) return true;
+  res.writeHead(401, { "Content-Type": "text/plain", "Cache-Control": "no-store" });
+  res.end("Unauthorized");
+  return false;
+}
+
+function startServer(
+  deps: DashboardDeps | undefined,
+  options: DashboardServerOptions,
+): http.Server {
+  const host = options.host ?? process.env.DASHBOARD_HOST ?? "127.0.0.1";
+  const port = options.port ?? DASHBOARD_PORT;
+  const routeHandlers = options.routeHandlers ?? [];
+
   const server = http.createServer((req, res) => {
+    void (async () => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const pathname = url.pathname;
 
     try {
-      if (pathname === "/" || pathname === "/index.html") return serveHtml(res);
-      if (pathname === "/favicon.ico") return serveFavicon(res);
-      if (pathname === "/api/status") return handleApiStatus(deps, res);
-      if (pathname === "/api/feeds") return handleApiFeeds(deps, res);
-      if (pathname === "/api/events") return handleApiEvents(deps, res, url);
-      if (pathname === "/api/cost") return handleApiCost(deps, res);
+      if (!authorizeRequest(req, res, url, options.token)) return;
+
+      for (const handler of routeHandlers) {
+        if (await handler(req, res, url)) return;
+      }
+
+      if (options.chatOnly && pathname === "/") {
+        res.writeHead(302, { Location: "/chat" });
+        res.end();
+        return;
+      }
+
+      if (deps) {
+        if (pathname === "/" || pathname === "/index.html") {
+          return serveHtml(res, deps.swarmConfig.channel.provider === "local");
+        }
+        if (pathname === "/favicon.ico") return serveFavicon(res);
+        if (pathname === "/api/status") return handleApiStatus(deps, res);
+        if (pathname === "/api/feeds") return handleApiFeeds(deps, res);
+        if (pathname === "/api/events") return handleApiEvents(deps, res, url);
+        if (pathname === "/api/cost") return handleApiCost(deps, res);
+      }
 
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("Not found");
@@ -264,12 +342,30 @@ export function startDashboard(deps: DashboardDeps): http.Server {
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end("Internal server error");
     }
+    })();
   });
 
-  server.listen(DASHBOARD_PORT, DASHBOARD_HOST, () => {
-    const displayHost = DASHBOARD_HOST === "0.0.0.0" ? "127.0.0.1" : DASHBOARD_HOST;
-    console.log(`[dashboard] Mission control at http://${displayHost}:${DASHBOARD_PORT}`);
+  server.listen(port, host, () => {
+    const address = server.address();
+    const actualPort = typeof address === "object" && address ? address.port : port;
+    const displayHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+    const label = options.chatOnly ? "Local chat" : "Mission control";
+    console.log(`[dashboard] ${label} at http://${displayHost}:${actualPort}`);
   });
 
   return server;
+}
+
+export function startDashboard(
+  deps: DashboardDeps,
+  options: DashboardServerOptions = {},
+): http.Server {
+  return startServer(deps, options);
+}
+
+export function startChatServer(
+  routeHandlers: HttpRouteHandler[],
+  options: Omit<DashboardServerOptions, "routeHandlers" | "chatOnly"> = {},
+): http.Server {
+  return startServer(undefined, { ...options, routeHandlers, chatOnly: true });
 }

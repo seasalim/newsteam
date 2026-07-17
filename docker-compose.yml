@@ -8,6 +8,10 @@ services:
       - path: .env
         required: false
     command: ["node", "dist/demo.js"]
+    environment:
+      DASHBOARD_HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:7777:7777"
     stdin_open: true
     tty: true
 

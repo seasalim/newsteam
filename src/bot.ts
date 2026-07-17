@@ -13,23 +13,17 @@ import {
   splitMessage,
   type SendableChannel,
 } from "./bot-messaging.ts";
+import type { ChannelAdapter, ChannelCallbacks } from "./channel.ts";
+import { createChannelSessions } from "./channel-session.ts";
 export { splitMessage } from "./bot-messaging.ts";
 
 const STILL_THINKING_MESSAGE = "🦞 Still thinking... hold that thought.";
 
-export interface BotConfig {
+export interface DiscordAdapterConfig extends ChannelCallbacks {
   token: string;
   allowedUserId: string;
   allowedChannelIds: string[];
   rateLimitMs: number;
-  onMessage: (message: string, channelId: string) => Promise<string>;
-  onStats: (channelId: string) => string;
-  onClear: (channelId: string) => string | Promise<string>;
-  onCost?: (channelId: string) => string;
-  onReplay?: (channelId: string) => string | null;
-  onHealth?: () => string;
-  onDigest?: (channelId: string) => Promise<string>;
-  onRefresh?: (channelId: string) => Promise<string>;
 }
 
 export interface AuthConfig {
@@ -54,7 +48,7 @@ export function isAllowed(
   return config.allowedChannelIds.includes(channelId);
 }
 
-export function createBot(config: BotConfig) {
+export function createDiscordAdapter(config: DiscordAdapterConfig): ChannelAdapter & { client: Client } {
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -63,29 +57,14 @@ export function createBot(config: BotConfig) {
       GatewayIntentBits.GuildMessageReactions,
     ],
   });
-  type QueuedMessage = {
-    author: { id: string; bot: boolean };
-    channel: { id: string; send: (content: string) => Promise<unknown> };
-    content: string;
-    reply: (content: string) => Promise<unknown>;
-  };
-
-  type ChannelState = {
-    inFlight: boolean;
-    queuedMessage: QueuedMessage | null;
-    lastAcceptedMessageAt: number;
-  };
-
-  const channelStates = new Map<string, ChannelState>();
-
-  function getChannelState(channelId: string): ChannelState {
-    let state = channelStates.get(channelId);
-    if (!state) {
-      state = { inFlight: false, queuedMessage: null, lastAcceptedMessageAt: 0 };
-      channelStates.set(channelId, state);
-    }
-    return state;
-  }
+  const inboundChannels = new Map<string, {
+    send: (content: string) => Promise<unknown>;
+    sendTyping?: () => Promise<unknown>;
+  }>();
+  const deliveryChannels = new Map<string, Array<{
+    send: (content: string) => Promise<unknown>;
+  }>>();
+  const typingIntervals = new Map<string, NodeJS.Timeout>();
 
   function buildSlashCommands() {
     return [
@@ -128,46 +107,28 @@ export function createBot(config: BotConfig) {
     }
   }
 
-  async function processMessage(message: {
-    author: { id: string; bot: boolean };
-    channel: {
-      id: string;
-      send: (content: string) => Promise<unknown>;
-      sendTyping?: () => Promise<unknown>;
-    };
-    content: string;
-    reply: (content: string) => Promise<unknown>;
-  }): Promise<void> {
-    const state = getChannelState(message.channel.id);
-    state.inFlight = true;
-    state.lastAcceptedMessageAt = Date.now();
-
-    // Show typing indicator while agent is thinking
-    const typingInterval = message.channel.sendTyping
-      ? (() => {
-          void message.channel.sendTyping!();
-          return setInterval(() => void message.channel.sendTyping!(), 8000);
-        })()
-      : null;
-
-    try {
-      const response = await config.onMessage(message.content, message.channel.id);
-      if (typingInterval) clearInterval(typingInterval);
-      await safeSend(message.channel, response);
-    } catch (error) {
-      if (typingInterval) clearInterval(typingInterval);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      await safeSend(message.channel, `❌ ${errorMessage}`);
-    } finally {
-      state.inFlight = false;
-
-      if (state.queuedMessage !== null) {
-        const nextMessage = state.queuedMessage;
-        state.queuedMessage = null;
-        void processMessage(nextMessage);
+  const sessions = createChannelSessions({
+    rateLimitMs: config.rateLimitMs,
+    process: config.onMessage,
+    deliver: async (channelId, text) => {
+      const pendingChannels = deliveryChannels.get(channelId);
+      const channel = pendingChannels?.shift() ?? inboundChannels.get(channelId);
+      if (!channel) throw new Error(`Discord channel ${channelId} is not available`);
+      await safeSend(channel, text);
+    },
+    setTyping: (channelId, active) => {
+      const existing = typingIntervals.get(channelId);
+      if (existing) {
+        clearInterval(existing);
+        typingIntervals.delete(channelId);
       }
-    }
-  }
+      if (!active) return;
+      const channel = inboundChannels.get(channelId);
+      if (!channel?.sendTyping) return;
+      void channel.sendTyping();
+      typingIntervals.set(channelId, setInterval(() => void channel.sendTyping!(), 8000));
+    },
+  });
 
   client.on(Events.MessageCreate, async (message) => {
     if (
@@ -179,24 +140,16 @@ export function createBot(config: BotConfig) {
       return;
     }
 
-    const state = getChannelState(message.channel.id);
-
-    if (state.inFlight) {
-      if (state.queuedMessage !== null) {
-        await message.reply(STILL_THINKING_MESSAGE);
-        return;
-      }
-
-      state.queuedMessage = message;
-      return;
+    inboundChannels.set(message.channel.id, message.channel);
+    const result = sessions.submit(message.channel.id, message.content);
+    if (result === "accepted" || result === "queued") {
+      const pendingChannels = deliveryChannels.get(message.channel.id) ?? [];
+      pendingChannels.push(message.channel);
+      deliveryChannels.set(message.channel.id, pendingChannels);
     }
-
-    if (Date.now() - state.lastAcceptedMessageAt < config.rateLimitMs) {
+    if (result === "busy" || result === "rate_limited") {
       await message.reply(STILL_THINKING_MESSAGE);
-      return;
     }
-
-    void processMessage(message);
   });
 
   client.once(Events.ClientReady, async () => {
@@ -310,7 +263,14 @@ export function createBot(config: BotConfig) {
 
   return {
     client,
-    login: () => client.login(config.token),
+    async start(): Promise<void> {
+      await client.login(config.token);
+    },
+    async stop(): Promise<void> {
+      for (const interval of typingIntervals.values()) clearInterval(interval);
+      typingIntervals.clear();
+      client.destroy();
+    },
     async sendToChannel(channelId: string, text: string): Promise<void> {
       const channel = await client.channels.fetch(channelId);
 
@@ -357,3 +317,6 @@ export function createBot(config: BotConfig) {
     },
   };
 }
+
+/** @deprecated Use createDiscordAdapter. */
+export const createBot = createDiscordAdapter;

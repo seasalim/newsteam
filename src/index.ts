@@ -12,7 +12,8 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { ConfirmFn } from "./agent.js";
-import { createBot } from "./bot.js";
+import { createDiscordAdapter } from "./bot.js";
+import type { ChannelAdapter, ChannelCallbacks } from "./channel.js";
 import { loadConfig } from "./config.js";
 import { ToolExecutor } from "./executor.js";
 import { buildDigestCallbacks, getFeedStartupWarning, resolveFeedPaths } from "./feed-wiring.js";
@@ -25,6 +26,8 @@ import { AgentManager, type AgentInstance } from "./manager.js";
 import { ToolRegistry } from "./registry.js";
 import { JobQueue } from "./scheduler.js";
 import { formatDollarsFromCents } from "./model-cost.js";
+import { createLocalChannelAdapter, type LocalChannelDefinition } from "./local-channel.js";
+import { LOCAL_CHANNEL_PAGE } from "./local-channel-page.js";
 
 async function main(): Promise<void> {
   const swarmConfig = loadConfig();
@@ -44,7 +47,7 @@ async function main(): Promise<void> {
   const lastDigests = new Map<string, string | null>();
 
   // Bot reference — set after creation
-  let bot: ReturnType<typeof createBot>;
+  let bot: ChannelAdapter;
 
   // Build confirmFn factory for the manager
   function buildConfirmFn(instance: AgentInstance): ConfirmFn {
@@ -86,22 +89,19 @@ async function main(): Promise<void> {
     return `Conversation cleared for ${instance.id}.`;
   }
 
-  // ── Single Discord bot ─────────────────────────────────────────────
-
-  const discordToken = process.env.DISCORD_TOKEN;
-  if (!discordToken) {
-    throw new Error("DISCORD_TOKEN is required");
-  }
+  // ── Channel adapter ────────────────────────────────────────────────
 
   const allChannelIds = manager.getAllChannelIds();
 
-  bot = createBot({
-    token: discordToken,
-    allowedUserId: swarmConfig.discord.allowed_user_id,
-    allowedChannelIds: allChannelIds,
-    rateLimitMs: swarmConfig.defaults.conversation.rate_limit_ms,
+  function getInstanceForChannel(channelId: string): AgentInstance | undefined {
+    return manager.getAgentForChannel(channelId) ?? manager.getAllAgents().find(
+      (instance) => instance.config.feeds?.channel_id === channelId,
+    );
+  }
+
+  const callbacks: ChannelCallbacks = {
     onMessage: async (message: string, channelId: string) => {
-      const instance = manager.getAgentForChannel(channelId);
+      const instance = getInstanceForChannel(channelId);
       if (!instance) throw new Error(`No agent configured for channel ${channelId}`);
       const jobQueue = jobQueues.get(instance.id)!;
       let combinedResponse = "";
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
       return combinedResponse;
     },
     onStats: (channelId: string) => {
-      const instance = manager.getAgentForChannel(channelId);
+      const instance = getInstanceForChannel(channelId);
       if (instance) {
         return `**${instance.id}**\n${instance.budget.formatStats()}`;
       }
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
         .join("\n\n");
     },
     onClear: async (channelId: string) => {
-      const instance = manager.getAgentForChannel(channelId);
+      const instance = getInstanceForChannel(channelId);
       if (instance) {
         return resetAgentSession(instance);
       }
@@ -152,7 +152,7 @@ async function main(): Promise<void> {
       return ledger.formatCostReport(swarmConfig.defaults.budget.monthly_budget_cents);
     },
     onReplay: (channelId: string) => {
-      const instance = manager.getAgentForChannel(channelId);
+      const instance = getInstanceForChannel(channelId);
       if (instance) {
         return lastDigests.get(instance.id) ?? null;
       }
@@ -184,7 +184,7 @@ async function main(): Promise<void> {
       ].join("\n");
     },
     onDigest: async (channelId: string) => {
-      const targeted = manager.getAgentForChannel(channelId);
+      const targeted = getInstanceForChannel(channelId);
       const agents = targeted ? [targeted] : manager.getAllAgents();
 
       const results: string[] = [];
@@ -220,7 +220,7 @@ async function main(): Promise<void> {
       return results.length > 0 ? results.join("\n") : "No feeds enabled.";
     },
     onRefresh: async (channelId: string) => {
-      const targeted = manager.getAgentForChannel(channelId);
+      const targeted = getInstanceForChannel(channelId);
       const agents = targeted ? [targeted] : manager.getAllAgents();
 
       const results: string[] = [];
@@ -249,27 +249,84 @@ async function main(): Promise<void> {
       }
       return results.length > 0 ? results.join("\n") : "No feeds enabled.";
     },
-  });
+  };
+
+  let localRouteHandler: ReturnType<typeof createLocalChannelAdapter>["handleRequest"] | undefined;
+  let localToken: string | undefined;
+
+  if (swarmConfig.channel.provider === "discord") {
+    const discordToken = process.env.DISCORD_TOKEN;
+    if (!discordToken) throw new Error("DISCORD_TOKEN is required");
+    const discordConfig = swarmConfig.discord;
+    if (!discordConfig) throw new Error("config.discord is required for the Discord channel provider");
+    bot = createDiscordAdapter({
+      token: discordToken,
+      allowedUserId: discordConfig.allowed_user_id,
+      allowedChannelIds: allChannelIds,
+      rateLimitMs: swarmConfig.defaults.conversation.rate_limit_ms,
+      ...callbacks,
+    });
+  } else {
+    const definitions = new Map<string, LocalChannelDefinition>();
+    for (const instance of manager.getAllAgents()) {
+      for (const channelId of instance.raw.channel_ids) {
+        definitions.set(channelId, {
+          channel_id: channelId,
+          agent_id: instance.id,
+          is_feed_channel: instance.config.feeds?.channel_id === channelId,
+          persona_dir: instance.raw.persona_dir,
+        });
+      }
+      const feedChannelId = instance.config.feeds?.channel_id;
+      if (feedChannelId && !definitions.has(feedChannelId)) {
+        definitions.set(feedChannelId, {
+          channel_id: feedChannelId,
+          agent_id: instance.id,
+          is_feed_channel: true,
+          persona_dir: instance.raw.persona_dir,
+        });
+      }
+    }
+    const localAdapter = createLocalChannelAdapter({
+      channels: [...definitions.values()],
+      rateLimitMs: swarmConfig.defaults.conversation.rate_limit_ms,
+      pageHtml: LOCAL_CHANNEL_PAGE,
+      ...callbacks,
+    });
+    bot = localAdapter;
+    localRouteHandler = localAdapter.handleRequest;
+    localToken = process.env.LOCAL_CHANNEL_TOKEN?.trim() || undefined;
+    const dashboardHost = process.env.DASHBOARD_HOST ?? "127.0.0.1";
+    if (!["127.0.0.1", "::1", "localhost"].includes(dashboardHost) && !localToken) {
+      console.warn("[security] WARNING: local chat is bound to a non-loopback host without LOCAL_CHANNEL_TOKEN");
+    }
+  }
 
   // ── Login ──────────────────────────────────────────────────────────
 
   try {
-    await bot.login();
+    await bot.start();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[core] Failed to log in bot: ${message}`);
+    console.error(`[core] Failed to start channel adapter: ${message}`);
     process.exit(1);
   }
 
   // ── Dashboard ─────────────────────────────────────────────────────
 
-  const dashboardServer = startDashboard({
-    swarmConfig,
-    agents: manager.getAllAgents(),
-    logger,
-    ledger,
-    startedAt,
-  });
+  const dashboardServer = startDashboard(
+    {
+      swarmConfig,
+      agents: manager.getAllAgents(),
+      logger,
+      ledger,
+      startedAt,
+    },
+    {
+      routeHandlers: localRouteHandler ? [localRouteHandler] : [],
+      token: localToken,
+    },
+  );
 
   // ── Central heartbeat (feeds, digests, synthesis, idle) ───────────
 
@@ -293,7 +350,7 @@ async function main(): Promise<void> {
     clearTimeout(heartbeat.initialTimeout);
     manager.shutdown();
     dashboardServer.close();
-    await bot.client.destroy();
+    await bot.stop();
     console.log("[core] Goodbye.");
     process.exit(0);
   };

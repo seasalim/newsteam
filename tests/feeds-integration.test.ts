@@ -287,7 +287,7 @@ test("buildFeedDigestPrompt warns against unsupported causal claims", () => {
   assert.ok(prompt.includes("general analysis or commentary piece"), "should distinguish commentary from event evidence");
 });
 
-test("buildFeedDigestPrompt targets the console without changing the Discord default", () => {
+test("buildFeedDigestPrompt uses transport-neutral chat delivery guidance", () => {
   const items = [{
     feed_name: "Test Feed",
     title: "Test item",
@@ -295,16 +295,10 @@ test("buildFeedDigestPrompt targets the console without changing the Discord def
     snippet: "Test snippet",
   }];
 
-  const discordPrompt = buildFeedDigestPrompt(items);
-  const consolePrompt = buildFeedDigestPrompt(items, [], "", "", undefined, {
-    deliveryTarget: "console",
-  });
-
-  assert.match(discordPrompt, /posted DIRECTLY to the Discord channel/u);
-  assert.doesNotMatch(discordPrompt, /printed DIRECTLY in a terminal/u);
-  assert.match(consolePrompt, /printed DIRECTLY in a terminal/u);
-  assert.doesNotMatch(consolePrompt, /Discord/u);
-  assert.match(consolePrompt, /work well in a terminal/u);
+  const prompt = buildFeedDigestPrompt(items);
+  assert.match(prompt, /delivered DIRECTLY to the news channel/u);
+  assert.doesNotMatch(prompt, /Discord|terminal/u);
+  assert.match(prompt, /readable Markdown and concise paragraphs/u);
 });
 
 test("buildFeedDigestPrompt raises fetch expectations for large digests", () => {

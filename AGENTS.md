@@ -2,10 +2,10 @@
 
 > Your personal news team. No subscription. Start for $0.
 
-NewsTeam is a self-hosted Discord harness for personality-driven AI news
+NewsTeam is a self-hosted local-browser/Discord harness for personality-driven AI news
 analysts. One TypeScript process runs a multi-agent swarm, deterministic RSS
 detection, scheduled LLM digests, source evaluation, weekly synthesis, hard
-budgets, memory, tools, and a local dashboard.
+budgets, memory, tools, local chat, and a dashboard.
 
 ## Build and run
 
@@ -38,7 +38,7 @@ Linux systemd, macOS launchd, Docker, and Windows/WSL guidance lives in
 
 ## Project layout
 
-- `src/` — TypeScript agent loop, Discord bot, feeds, providers, budget,
+- `src/` — TypeScript agent loop, channel adapters, feeds, providers, budget,
   memory, dashboard, and tool execution
 - `tools/` — capability-limited handlers discovered through JSON manifests
 - `scripts/feed-check.py` — standard-library RSS/Atom detection
@@ -55,13 +55,14 @@ Linux systemd, macOS launchd, Docker, and Windows/WSL guidance lives in
 
 ### Multi-agent swarm
 
-Each `agents` entry has its own persona directory, Discord channels, feed
+Each `agents` entry has its own persona directory, channel IDs, feed
 configuration, budget, conversation window, and memory. `resolveAgentConfig()`
 merges per-agent overrides with `defaults`. Channel IDs must not overlap.
 
 `AgentManager` creates one `AgentLoop` per agent. Per-agent `JobQueue` instances
 serialize chat and feed work, prioritizing user messages. The Discord adapter
-is auth-gated to one configured user and the configured channels.
+is auth-gated to one configured user; the local adapter is loopback-only by
+default and supports an optional shared token. Both validate configured channels.
 
 ### Model providers and budgets
 
@@ -116,6 +117,7 @@ Active files under `persona/<agent>/` are private:
 - `MEMORY.md` — bounded agent-managed memory
 - `feeds.json` — RSS registry with `fetch_hint` and `content_quality`
 - feed state, pending queue, context, archive, quality, and source-review files
+- `local_channel/*.jsonl` display transcripts when the local provider is active
 
 Never read, copy, or commit private persona files when preparing public
 examples. Write examples from scratch under `examples/personas/`.
@@ -145,7 +147,7 @@ the enforced schema subset.
   `config.yaml`, `.env`, logs, or active `persona/` content.
 - Tools are capability-limited handlers with JSON manifests, not arbitrary
   subprocess or shell access.
-- Preserve the single-user Discord auth gate unless a change explicitly
+- Preserve the single-user channel auth gate unless a change explicitly
   implements and tests a new authorization model.
 
 ## Verification expectations
