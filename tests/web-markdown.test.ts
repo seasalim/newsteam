@@ -4,6 +4,7 @@ import vm from "node:vm";
 
 import { LOCAL_CHANNEL_PAGE } from "../src/local-channel-page.ts";
 import { WEB_MARKDOWN_SCRIPT } from "../src/web-markdown.ts";
+import { HTML_PAGE } from "../src/dashboard-page.ts";
 
 function render(input: string): string {
   const context = { input, result: "" };
@@ -42,4 +43,11 @@ test("local chat page is self-contained and includes the required controls", () 
 test("local chat constrains the message grid row so the stream scrolls", () => {
   assert.match(LOCAL_CHANNEL_PAGE, /grid-template-rows:auto minmax\(0,1fr\) auto/u);
   assert.match(LOCAL_CHANNEL_PAGE, /\.stream\{min-height:0;overflow-y:auto/u);
+});
+
+test("dashboard controls use a non-floating responsive header", () => {
+  assert.match(HTML_PAGE, /\.page-header\s*\{[^}]*display: flex;/u);
+  assert.match(HTML_PAGE, /\.header-actions\s*\{[^}]*display: flex;[^}]*gap: 8px;/u);
+  assert.match(HTML_PAGE, /<div class="page-header">/u);
+  assert.doesNotMatch(HTML_PAGE, /position: fixed/u);
 });
