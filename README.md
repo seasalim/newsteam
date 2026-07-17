@@ -22,7 +22,7 @@ Paid capacity is optional. Enable billing only if you outgrow the Gemini free ti
 
 ## Quickstart: try it in your terminal
 
-The console demo lets you choose from six analyst personas, generates a real briefing from that persona's starter feeds, then lets you ask follow-up questions. It needs no Discord bot, channel IDs, or `config.yaml`.
+The console demo lets you choose from six analyst personas, generates a real briefing from that persona's starter feeds, then lets you ask follow-up questions. It needs no Discord bot, channel IDs, or `config.yaml`. You will need Docker with Docker Compose installed.
 
 ```bash
 git clone https://github.com/seasalim/newsteam.git
