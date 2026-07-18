@@ -35,7 +35,6 @@ test("local chat page is self-contained and includes the required controls", () 
   assert.match(LOCAL_CHANNEL_PAGE, /id="channels"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /id="composer"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /id="new-button"/u);
-  assert.match(LOCAL_CHANNEL_PAGE, /id="header-profile"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /profile_image_url/u);
   assert.match(LOCAL_CHANNEL_PAGE, /loading='lazy'|loading="lazy"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /image\.onerror=function\(\)\{image\.remove\(\)\}/u);
@@ -47,6 +46,20 @@ test("local chat page is self-contained and includes the required controls", () 
 test("local chat constrains the message grid row so the stream scrolls", () => {
   assert.match(LOCAL_CHANNEL_PAGE, /grid-template-rows:auto minmax\(0,1fr\) auto/u);
   assert.match(LOCAL_CHANNEL_PAGE, /\.stream\{min-height:0;overflow-y:auto/u);
+});
+
+test("local chat emphasizes a single rail avatar over channel identifiers", () => {
+  assert.match(LOCAL_CHANNEL_PAGE, /\.rail-avatar\{width:72px;height:72px/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.agent-label\{text-align:center\}/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.agent-label:not\(:first-child\)\{border-top:1px solid var\(--border\)/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.channel\{position:relative;flex-direction:column/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /class="header-channel" id="header-channel"/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /button\.append\(profileElement\(channel,'rail-avatar'\),id\)/u);
+  assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /News feed|badge\.textContent='FEED'|function channelLabel/u);
+  assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /id="header-profile"/u);
+  assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /profileElement\(channel,'header-avatar'\)/u);
+  assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /profileElement\(state\.active,'message-avatar'\)/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.message\.agent\{display:block\}/u);
 });
 
 test("dashboard controls use a non-floating responsive header", () => {
