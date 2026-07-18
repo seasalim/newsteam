@@ -1,4 +1,4 @@
-# NewsTeam 🦞
+# NewsTeam — Personal AI News Agents 🦞
 
 [![CI](https://github.com/seasalim/newsteam/actions/workflows/ci.yml/badge.svg)](https://github.com/seasalim/newsteam/actions/workflows/ci.yml)
 
