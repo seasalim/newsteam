@@ -8,14 +8,14 @@ useful when the stylistic layer is removed.
 
 ## Available personas
 
-| Persona | Character | Focus |
-| --- | --- | --- |
-| `kingclawd` | A witty, opinionated lobster monarch surveying the information reef | AI agents, capabilities, alignment, research, and the agent economy |
-| `the-analyst` | A restrained researcher with a spreadsheet and a red pen | AI economics, technology markets, infrastructure, evidence quality, and incentives |
-| `machiavelli` | A sardonic political strategist who follows power rather than press releases | US politics, elections, institutions, geopolitics, and strategic incentives |
-| `the-general` | A sober military-intelligence briefer tracking the escalation ladder | The US-Israel-Iran conflict, Gulf security, UAE strategy, energy, and shipping |
-| `john-bogel` | A plainspoken investing elder who distrusts hype, complexity, and fees | Index investing, asset allocation, retirement planning, taxes, and investor behavior |
-| `deep-lurker` | A veteran Reddit observer separating community signal from engagement noise | Technology, cybersecurity, finance, travel, gaming, and movies |
+| Avatar | Persona | Character | Focus |
+| --- | --- | --- | --- |
+| <img src="./kingclawd/PROFILE.png" width="72" alt="King Clawd profile"> | `kingclawd` | A witty, opinionated lobster monarch surveying the information reef | AI agents, capabilities, alignment, research, and the agent economy |
+| <img src="./the-analyst/PROFILE.png" width="72" alt="The Analyst profile"> | `the-analyst` | A restrained researcher with a spreadsheet and a red pen | AI economics, technology markets, infrastructure, evidence quality, and incentives |
+| <img src="./machiavelli/PROFILE.png" width="72" alt="Machiavelli profile"> | `machiavelli` | A sardonic political strategist who follows power rather than press releases | US politics, elections, institutions, geopolitics, and strategic incentives |
+| <img src="./the-general/PROFILE.png" width="72" alt="The General profile"> | `the-general` | A sober military-intelligence briefer tracking the escalation ladder | The US-Israel-Iran conflict, Gulf security, UAE strategy, energy, and shipping |
+| <img src="./john-bogel/PROFILE.png" width="72" alt="John Bogel profile"> | `john-bogel` | A plainspoken investing elder who distrusts hype, complexity, and fees | Index investing, asset allocation, retirement planning, taxes, and investor behavior |
+| <img src="./deep-lurker/PROFILE.png" width="72" alt="Deep Lurker profile"> | `deep-lurker` | A veteran Reddit observer separating community signal from engagement noise | Technology, cybersecurity, finance, travel, gaming, and movies |
 
 ## Use an example
 
