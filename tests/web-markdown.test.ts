@@ -54,6 +54,8 @@ test("local chat emphasizes a single rail avatar over channel identifiers", () =
   assert.match(LOCAL_CHANNEL_PAGE, /\.rail-avatar\{width:72px;height:72px/u);
   assert.match(LOCAL_CHANNEL_PAGE, /\.agent-label\{text-align:center\}/u);
   assert.match(LOCAL_CHANNEL_PAGE, /\.agent-label:not\(:first-child\)\{border-top:1px solid var\(--border\)/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.rail\{scrollbar-width:none\}/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /\.rail::-webkit-scrollbar\{display:none\}/u);
   assert.match(LOCAL_CHANNEL_PAGE, /\.channel\{position:relative;flex-direction:column/u);
   assert.match(LOCAL_CHANNEL_PAGE, /class="header-channel" id="header-channel"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /button\.append\(profileElement\(channel,'rail-avatar'\),id\)/u);
