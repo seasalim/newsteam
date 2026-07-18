@@ -39,6 +39,8 @@ test("local chat page is self-contained and includes the required controls", () 
   assert.match(LOCAL_CHANNEL_PAGE, /loading='lazy'|loading="lazy"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /image\.onerror=function\(\)\{image\.remove\(\)\}/u);
   assert.match(LOCAL_CHANNEL_PAGE, /new EventSource\('\/api\/chat\/events'\)/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /source\.onopen=function\(\)/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /status\.textContent==='Reconnecting to local chat…'/u);
   assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /<script\s+src=/u);
   assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /<link[^>]+stylesheet/u);
 });
