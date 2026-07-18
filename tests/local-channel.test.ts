@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { copyFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import type http from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -46,8 +46,11 @@ async function waitForHistory(baseUrl: string, expectedCount: number): Promise<L
   throw new Error(`History did not reach ${expectedCount} messages`);
 }
 
-function createAdapter(overrides: { onMessage?: (text: string) => Promise<string> } = {}) {
-  const personaDir = mkdtempSync(path.join(tmpdir(), "newsteam-local-channel-"));
+function createAdapter(overrides: {
+  onMessage?: (text: string) => Promise<string>;
+  personaDir?: string;
+} = {}) {
+  const personaDir = overrides.personaDir ?? mkdtempSync(path.join(tmpdir(), "newsteam-local-channel-"));
   return createLocalChannelAdapter({
     channels: [{ channel_id: "chat", agent_id: "agent", is_feed_channel: false, persona_dir: personaDir }],
     rateLimitMs: 1_000,
@@ -131,7 +134,12 @@ test("local confirmations approve through SSE and deny on timeout", async (t) =>
 });
 
 test("shared server token protects chat APIs and supports token-cookie entry", async (t) => {
-  const adapter = createAdapter();
+  const personaDir = mkdtempSync(path.join(tmpdir(), "newsteam-local-channel-profile-"));
+  copyFileSync(
+    path.join(process.cwd(), "examples", "personas", "kingclawd", "PROFILE.png"),
+    path.join(personaDir, "PROFILE.png"),
+  );
+  const adapter = createAdapter({ personaDir });
   await adapter.start();
   const server = startChatServer([adapter.handleRequest], {
     host: "127.0.0.1",
@@ -142,13 +150,72 @@ test("shared server token protects chat APIs and supports token-cookie entry", a
   t.after(async () => { await adapter.stop(); await close(server); });
 
   assert.equal((await fetch(`${baseUrl}/api/chat/channels`)).status, 401);
+  assert.equal((await fetch(`${baseUrl}/api/personas/agent/profile.png`)).status, 401);
   assert.equal((await fetch(`${baseUrl}/api/chat/channels`, {
+    headers: { Authorization: "Bearer secret token" },
+  })).status, 200);
+  assert.equal((await fetch(`${baseUrl}/api/personas/agent/profile.png`, {
     headers: { Authorization: "Bearer secret token" },
   })).status, 200);
   const entry = await fetch(`${baseUrl}/chat?token=${encodeURIComponent("secret token")}`, { redirect: "manual" });
   assert.equal(entry.status, 302);
   assert.equal(entry.headers.get("location"), "/chat");
   assert.match(entry.headers.get("set-cookie") ?? "", /newsteam_token=/u);
+});
+
+test("local channel exposes validated profile metadata and cacheable image bytes", async (t) => {
+  const personaDir = mkdtempSync(path.join(tmpdir(), "newsteam-local-channel-profile-"));
+  copyFileSync(
+    path.join(process.cwd(), "examples", "personas", "kingclawd", "PROFILE.png"),
+    path.join(personaDir, "PROFILE.png"),
+  );
+  const adapter = createAdapter({ personaDir });
+  await adapter.start();
+  const server = startChatServer([adapter.handleRequest], { host: "127.0.0.1", port: 0 });
+  const baseUrl = await listen(server);
+  t.after(async () => { await adapter.stop(); await close(server); });
+
+  const channelsResponse = await fetch(`${baseUrl}/api/chat/channels`);
+  const channelsText = await channelsResponse.text();
+  assert.doesNotMatch(channelsText, /persona_dir|newsteam-local-channel-profile/u);
+  assert.deepEqual(JSON.parse(channelsText), [{
+    channel_id: "chat",
+    agent_id: "agent",
+    is_feed_channel: false,
+    profile_image_url: "/api/personas/agent/profile.png",
+  }]);
+
+  const profile = await fetch(`${baseUrl}/api/personas/agent/profile.png`);
+  assert.equal(profile.status, 200);
+  assert.equal(profile.headers.get("content-type"), "image/png");
+  assert.equal(profile.headers.get("x-content-type-options"), "nosniff");
+  assert.match(profile.headers.get("cache-control") ?? "", /private, max-age=3600/u);
+  const bytes = Buffer.from(await profile.arrayBuffer());
+  assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+
+  const etag = profile.headers.get("etag");
+  assert.ok(etag);
+  const cached = await fetch(`${baseUrl}/api/personas/agent/profile.png`, {
+    headers: { "If-None-Match": etag },
+  });
+  assert.equal(cached.status, 304);
+  assert.equal((await fetch(`${baseUrl}/api/personas/unknown/profile.png`)).status, 404);
+  assert.equal((await fetch(`${baseUrl}/api/personas/%2Fetc%2Fpasswd/profile.png`)).status, 404);
+  assert.equal((await fetch(`${baseUrl}/api/personas/agent/profile.png`, { method: "POST" })).status, 405);
+});
+
+test("local channel falls back when PROFILE.png is missing or invalid", async (t) => {
+  const personaDir = mkdtempSync(path.join(tmpdir(), "newsteam-local-channel-profile-"));
+  writeFileSync(path.join(personaDir, "PROFILE.png"), "not a png", "utf8");
+  const adapter = createAdapter({ personaDir });
+  await adapter.start();
+  const server = startChatServer([adapter.handleRequest], { host: "127.0.0.1", port: 0 });
+  const baseUrl = await listen(server);
+  t.after(async () => { await adapter.stop(); await close(server); });
+
+  const channels = await fetch(`${baseUrl}/api/chat/channels`).then((response) => response.json());
+  assert.equal(channels[0].profile_image_url, null);
+  assert.equal((await fetch(`${baseUrl}/api/personas/agent/profile.png`)).status, 404);
 });
 
 test("local channel serves CSP-protected chat and rejects browser cross-origin posts", async (t) => {

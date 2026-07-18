@@ -90,11 +90,19 @@ An active persona directory can contain:
 - `LENS.md` — digest framework and writing rules
 - `MEMORY.md` — bounded long-term memory managed by the agent
 - `feeds.json` — feed registry and fetch guidance
+- `PROFILE.png` — optional square persona image for web surfaces
 - runtime feed context, queues, archives, and quality records
 
 All active persona files are private and ignored by Git. Public starter
 personas live under `examples/personas/` and are copied into `persona/` during
 setup.
+
+`PROFILE.png` is convention-based rather than a configuration field. The web
+server validates the fixed filename as a square PNG, exposes it through the
+authenticated `/api/personas/<agent-id>/profile.png` route, and never returns
+the private `persona_dir`. Local Chat and Mission Control use an initial-based
+fallback when the image is absent or invalid. The 512px starter images remain
+the only committed variants; browsers scale them and cache them privately.
 
 Memory is deliberately small. The built-in `remember` capability is intended
 for durable preferences, names, relationships, and decisions—not a transcript

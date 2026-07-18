@@ -171,11 +171,12 @@ command output (`/stats`, `/cost`) as monospaced system cards.
 | Route | Method | Purpose |
 | --- | --- | --- |
 | `/chat` | GET | Chat page (static HTML, like `/`) |
-| `/api/chat/channels` | GET | `[{ channel_id, agent_id, is_feed_channel }]` from config |
+| `/api/chat/channels` | GET | `[{ channel_id, agent_id, is_feed_channel, profile_image_url }]` from config; the URL is `null` when no valid image exists |
 | `/api/chat/history?channel=<id>&before=<msg id>&n=100` | GET | Paged transcript slice, newest last |
 | `/api/chat/message` | POST | `{ channel_id, text }` → `202 { result: "accepted" \| "queued" }` or `409 { result: "busy" \| "rate_limited" }` (the `SubmitResult` verbatim); agent reply arrives via SSE |
 | `/api/chat/events` | GET | SSE stream, all channels multiplexed |
 | `/api/chat/confirm` | POST | `{ confirmation_id, approve }` |
+| `/api/personas/<agent-id>/profile.png` | GET/HEAD | Validated `PROFILE.png` bytes for a configured agent; private-cacheable and protected by the shared token gate |
 
 SSE event types: `message` (full message object), `typing`
 (`{ channel_id, active }`), `confirmation` (`{ confirmation_id, channel_id,
@@ -242,19 +243,19 @@ Same conventions as the dashboard page: one exported template string, no
 external assets, dark/light theme with the same CSS variables, `localStorage`
 theme persistence. Layout:
 
-- Left rail: channel list grouped by agent, with the feed channel badged;
-  unread dot driven by SSE while a channel is unfocused.
+- Left rail: channel list grouped by agent, with the persona image and feed
+  channel badge; unread dot driven by SSE while a channel is unfocused.
 - Main pane: message stream. Agent/system messages render markdown; user
-  messages render as plain text. Typing indicator row while `typing` is
-  active. Confirmation cards inline.
+  messages render as plain text. Agent replies, digests, and the typing row
+  show the persona image. Confirmation cards render inline.
 - Composer: textarea (Enter sends, Shift+Enter newline), disabled-with-
   spinner only when the channel reports `busy` — matching the queue-one-
   message semantics, the composer stays usable and the server queues or
   bounces.
-- Channel header: agent/channel name, a "New conversation" button (same code
-  path as the typed `/new`, behind an inline confirm), and a cross-link
-  between `/chat` and `/` (dashboard), so "Mission Control" and chat feel
-  like one app.
+- Channel header: persona image plus agent/channel name, a "New conversation"
+  button (same code path as the typed `/new`, behind an inline confirm), and
+  a cross-link between `/chat` and `/` (dashboard), so "Mission Control" and
+  chat feel like one app.
 
 Markdown: a small sanitizing renderer written for this page (headings, bold/
 italic, links opening in a new tab, inline code, fenced code, lists,
@@ -311,6 +312,9 @@ AGENTS.md flags as requiring explicit implementation and tests:
   that immediately strips the query param via redirect). Startup **warns
   loudly** if `DASHBOARD_HOST` is non-loopback and no token is set, and the
   docs treat token + reverse proxy w/ TLS as the supported way to expose it.
+- Persona images use the same gate. Requests map an encoded agent ID through
+  configured agent metadata to the fixed `PROFILE.png` filename; callers
+  cannot supply a persona path or read arbitrary files.
 - The read-only dashboard endpoints keep their current (no-auth) behavior on
   loopback; when a token is configured it protects those too, since feed
   titles and event logs are also personal data.

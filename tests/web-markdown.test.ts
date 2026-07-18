@@ -35,6 +35,10 @@ test("local chat page is self-contained and includes the required controls", () 
   assert.match(LOCAL_CHANNEL_PAGE, /id="channels"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /id="composer"/u);
   assert.match(LOCAL_CHANNEL_PAGE, /id="new-button"/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /id="header-profile"/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /profile_image_url/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /loading='lazy'|loading="lazy"/u);
+  assert.match(LOCAL_CHANNEL_PAGE, /image\.onerror=function\(\)\{image\.remove\(\)\}/u);
   assert.match(LOCAL_CHANNEL_PAGE, /new EventSource\('\/api\/chat\/events'\)/u);
   assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /<script\s+src=/u);
   assert.doesNotMatch(LOCAL_CHANNEL_PAGE, /<link[^>]+stylesheet/u);
@@ -50,4 +54,7 @@ test("dashboard controls use a non-floating responsive header", () => {
   assert.match(HTML_PAGE, /\.header-actions\s*\{[^}]*display: flex;[^}]*gap: 8px;/u);
   assert.match(HTML_PAGE, /<div class="page-header">/u);
   assert.doesNotMatch(HTML_PAGE, /position: fixed/u);
+  assert.match(HTML_PAGE, /function profileMarkup\(id, url\)/u);
+  assert.match(HTML_PAGE, /class="agent-heading"/u);
+  assert.match(HTML_PAGE, /loading="lazy"/u);
 });

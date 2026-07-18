@@ -37,6 +37,10 @@ NewsTeam. The `persona_dir` should point to the copied directory, for example
 - `INTERESTS.md` ranks the domains the digest should prioritize.
 - `LENS.md` supplies the analytical framework and digest-writing rules.
 - `feeds.json` registers RSS sources and gives the agent fetch guidance.
+- `PROFILE.png` optionally supplies the persona image used by Local Chat and
+  Mission Control. Use a square PNG between 32px and 4096px; 512px is the
+  recommended single source size, with the subject centered for circular
+  cropping. Missing or invalid images fall back to the persona's initial.
 
 The examples intentionally omit `MEMORY.md` and runtime feed artifacts.
 Agents create and maintain `MEMORY.md`, `feeds_state.json`,

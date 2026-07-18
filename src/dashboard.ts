@@ -8,6 +8,7 @@ import type { AgentInstance } from "./manager.js";
 import type { EventLogger } from "./logger.js";
 import { DEFAULT_MAX_QUEUE_AGE_HOURS, loadPendingItems } from "./feeds.ts";
 import { stripProviderPrefix } from "./model.ts";
+import { personaProfileUrl, servePersonaProfile } from "./persona-profile.ts";
 import { HTML_PAGE } from "./dashboard-page.ts";
 
 export interface DashboardDeps {
@@ -134,6 +135,7 @@ function handleApiStatus(deps: DashboardDeps, res: http.ServerResponse): void {
     const stats = a.budget.getStats();
     return {
       id: a.id,
+      profile_image_url: personaProfileUrl(a.id, a.raw.persona_dir),
       channels: a.raw.channel_ids.length,
       chat_model: a.config.budget.model,
       chat_model_label: stripProviderPrefix(a.config.budget.model),
@@ -189,6 +191,7 @@ function handleApiFeeds(deps: DashboardDeps, res: http.ServerResponse): void {
 
       return {
         agent_id: a.id,
+        profile_image_url: personaProfileUrl(a.id, a.raw.persona_dir),
         feeds: Array.isArray(feeds)
           ? feeds.map((feed) => {
               const feedId = isObjectRecord(feed) && typeof feed.id === "string" ? feed.id : "unknown";
@@ -305,6 +308,10 @@ function startServer(
   const host = options.host ?? process.env.DASHBOARD_HOST ?? "127.0.0.1";
   const port = options.port ?? DASHBOARD_PORT;
   const routeHandlers = options.routeHandlers ?? [];
+  const profileSources = deps?.agents.map((agent) => ({
+    agentId: agent.id,
+    personaDir: agent.raw.persona_dir,
+  })) ?? [];
 
   const server = http.createServer((req, res) => {
     void (async () => {
@@ -317,6 +324,8 @@ function startServer(
       for (const handler of routeHandlers) {
         if (await handler(req, res, url)) return;
       }
+
+      if (servePersonaProfile(req, res, url, profileSources)) return;
 
       if (options.chatOnly && pathname === "/") {
         res.writeHead(302, { Location: "/chat" });

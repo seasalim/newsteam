@@ -14,6 +14,7 @@ test("createDemoWorkspace copies the public persona and cleans up runtime state"
   try {
     assert.ok(existsSync(path.join(workspace.personaDir, "IDENTITY.md")));
     assert.ok(existsSync(path.join(workspace.personaDir, "feeds.json")));
+    assert.ok(existsSync(path.join(workspace.personaDir, "PROFILE.png")));
 
     writeFileSync(path.join(workspace.personaDir, "feeds_state.json"), "{}", "utf8");
     assert.ok(existsSync(path.join(workspace.personaDir, "feeds_state.json")));

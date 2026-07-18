@@ -50,6 +50,14 @@ export const HTML_PAGE = `<!DOCTYPE html>
   .agent-section { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
   .agent-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
   .agent-name { color: var(--accent); font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+  .agent-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .agent-heading .agent-name { margin-bottom: 0; }
+  .agent-avatar {
+    position: relative; display: inline-grid; place-items: center; overflow: hidden;
+    width: 30px; height: 30px; flex: 0 0 30px; border: 1px solid var(--border);
+    border-radius: 50%; background: var(--bg); color: var(--accent); font-weight: 700;
+  }
+  .agent-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .feed-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .feed-table th {
     text-align: left; color: var(--muted); font-weight: normal;
@@ -135,6 +143,19 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function profileMarkup(id, url) {
+  const initial = (String(id || '?').trim().charAt(0) || '?').toUpperCase();
+  return '<span class="agent-avatar"><span aria-hidden="true">' + esc(initial) + '</span>' +
+    (url ? '<img src="' + esc(url) + '" alt="' + esc(id) +
+      ' profile image" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
+    '</span>';
+}
+
+function agentHeading(id, url) {
+  return '<div class="agent-heading">' + profileMarkup(id, url) +
+    '<div class="agent-name">' + esc(id) + '</div></div>';
+}
+
 function statRow(label, value, cls) {
   return '<div class="stat-row"><span class="stat-label">' + esc(label) +
     '</span><span class="stat-value ' + (cls||'') + '">' + value + '</span></div>';
@@ -206,7 +227,7 @@ async function refresh() {
       const sessPct = a.session.max_session_cost_cents > 0
         ? (a.session.cost_cents / a.session.max_session_cost_cents) * 100 : 0;
       statusHtml += '<div class="agent-section">' +
-        '<div class="agent-name">' + esc(a.id) + '</div>' +
+        agentHeading(a.id, a.profile_image_url) +
         statRow('Channels', esc(a.channels)) +
         statRow('Chat model', esc(a.chat_model_label || '\\u2014')) +
         statRow('Digest model', esc(a.digest_model_label || '\\u2014')) +
@@ -240,7 +261,7 @@ async function refresh() {
       feedsHtml = '<span style="color:var(--muted)">No feeds configured</span>';
     } else {
       for (const af of feeds.agents) {
-        feedsHtml += '<div class="agent-section"><div class="agent-name">' + esc(af.agent_id) + '</div>';
+        feedsHtml += '<div class="agent-section">' + agentHeading(af.agent_id, af.profile_image_url);
         if (af.feeds.length === 0) {
           feedsHtml += '<span style="color:var(--muted)">No feeds</span>';
         } else {

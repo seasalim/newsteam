@@ -9,6 +9,7 @@ import {
   type LocalMessageKind,
   type LocalMessageRole,
 } from "./local-transcript.ts";
+import { personaProfileUrl, servePersonaProfile } from "./persona-profile.ts";
 
 export interface LocalChannelDefinition {
   channel_id: string;
@@ -88,6 +89,12 @@ function isCrossOrigin(req: http.IncomingMessage): boolean {
 
 export function createLocalChannelAdapter(config: LocalChannelConfig): LocalChannelAdapter {
   const channelIds = new Set(config.channels.map((channel) => channel.channel_id));
+  const profileSources = [
+    ...new Map(config.channels.map((channel) => [channel.agent_id, {
+      agentId: channel.agent_id,
+      personaDir: channel.persona_dir,
+    }])).values(),
+  ];
   const transcript = new LocalTranscript(config.channels.map((channel) => ({
     channelId: channel.channel_id,
     personaDir: channel.persona_dir,
@@ -258,6 +265,8 @@ export function createLocalChannelAdapter(config: LocalChannelConfig): LocalChan
   }
 
   const handleRequest: HttpRouteHandler = async (req, res, url) => {
+    if (servePersonaProfile(req, res, url, profileSources)) return true;
+
     if (url.pathname.startsWith("/api/chat/") && req.method === "POST") {
       if (isCrossOrigin(req)) {
         jsonResponse(res, 403, { error: "Cross-origin requests are not allowed" });
@@ -269,7 +278,10 @@ export function createLocalChannelAdapter(config: LocalChannelConfig): LocalChan
       }
     }
     if (url.pathname === "/api/chat/channels" && req.method === "GET") {
-      jsonResponse(res, 200, config.channels.map(({ persona_dir: _personaDir, ...channel }) => channel));
+      jsonResponse(res, 200, config.channels.map(({ persona_dir: personaDir, ...channel }) => ({
+        ...channel,
+        profile_image_url: personaProfileUrl(channel.agent_id, personaDir),
+      })));
       return true;
     }
     if (url.pathname === "/api/chat/history" && req.method === "GET") {
